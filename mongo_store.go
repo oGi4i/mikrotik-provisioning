@@ -70,10 +70,10 @@ func (s *MongoStorage) GetAddressListById(ctx context.Context, id string) (*Addr
 
 	if res.Err() == nil {
 		if b, err := res.DecodeBytes(); err != nil {
-			return nil, err
-		} else {
-			if b.String() == "" {
+			if b.String() == "" && err.Error() == "mongo: no documents in result" {
 				return nil, nil
+			} else {
+				return nil, err
 			}
 		}
 
@@ -99,10 +99,10 @@ func (s *MongoStorage) GetAddressListByName(ctx context.Context, name string) (*
 
 	if res.Err() == nil {
 		if b, err := res.DecodeBytes(); err != nil {
-			return nil, err
-		} else {
-			if b.String() == "" {
+			if b.String() == "" && err.Error() == "mongo: no documents in result" {
 				return nil, nil
+			} else {
+				return nil, err
 			}
 		}
 

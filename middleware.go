@@ -71,14 +71,26 @@ func EnsureAddressListNotExists(i *Implementation) func(next http.Handler) http.
 	}
 }
 
-func AdminOnly(next http.Handler) http.Handler {
+func EnsureAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		isAdmin, ok := r.Context().Value("acl.admin").(bool)
-		if !ok || !isAdmin {
-			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		if auth := r.Header.Get("Authorization"); auth != "" {
+			authValues := strings.Split(auth, ":")
+			if len(authValues) == 2 {
+				accessKey := authValues[0]
+				secretKey := authValues[1]
+				for _, v := range users {
+					if v.AccessKey == accessKey && v.SecretKey == secretKey {
+						next.ServeHTTP(w, r)
+					}
+				}
+			} else {
+				http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+				return
+			}
+		} else {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
-		next.ServeHTTP(w, r)
 	})
 }
 
