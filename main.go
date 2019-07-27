@@ -51,25 +51,19 @@ func main() {
 }
 
 func NewDB(ctx context.Context) (*mongo.Client, *mongo.Collection) {
-	ctx, _ = context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, _ = context.WithTimeout(context.Background(), cfg.Database.Timeout*time.Second)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.Database.DSN))
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %q\n", err)
 	}
 
-	ctx, _ = context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, _ = context.WithTimeout(context.Background(), cfg.Database.Timeout*time.Second*5)
 	err = client.Ping(ctx, readpref.Nearest())
 	if err != nil {
 		log.Fatalf("Failed to ping MongoDB: %q\n", err)
 	}
 
 	collection := client.Database(cfg.Database.Name).Collection(cfg.Database.Collection)
-
-	/*ctx, cancel := context.WithCancel(ctx)
-	defer func() {
-		cancel()
-		sess.Close()
-	}()*/
 
 	return client, collection
 }

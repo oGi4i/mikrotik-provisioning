@@ -104,7 +104,16 @@ func GetAddressListTextResponse(addressList *AddressList) []byte {
 		case false:
 			disabled = "no"
 		}
-		output.WriteString(fmt.Sprintf("/ip firewall address-list add list=%s address=%s disabled=%s\n", addressList.Name, addr.Address, disabled))
+
+		str := fmt.Sprintf("/ip firewall address-list add list=%s address=%s disabled=%s", addressList.Name, addr.Address, disabled)
+
+		if addr.Comment != "" {
+			str += fmt.Sprintf(" comment=%s\n", addr.Comment)
+		} else {
+			str += "\n"
+		}
+
+		output.WriteString(str)
 	}
 	return output.Bytes()
 }

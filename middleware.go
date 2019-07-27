@@ -28,7 +28,7 @@ func EnsureAddressListExists(i *Implementation) func(next http.Handler) http.Han
 				return
 			}
 			if err != nil {
-				render.Render(w, r, ErrNotFound)
+				render.Render(w, r, ErrInternalServerError(err))
 				return
 			}
 

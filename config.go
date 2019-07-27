@@ -3,6 +3,7 @@ package main
 import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"time"
 )
 
 type YamlConfig struct {
@@ -15,9 +16,10 @@ type ConfigAccess struct {
 }
 
 type ConfigDatabase struct {
-	DSN        string `yaml:"dsn"`
-	Name       string `yaml:"name"`
-	Collection string `yaml:"collection"`
+	DSN        string        `yaml:"dsn"`
+	Name       string        `yaml:"name"`
+	Collection string        `yaml:"collection"`
+	Timeout    time.Duration `yaml:"timeout"`
 }
 
 func (cfg *YamlConfig) initConfig() error {

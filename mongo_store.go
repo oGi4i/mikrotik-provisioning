@@ -19,7 +19,7 @@ func NewMongoStorage(client *mongo.Client, collection *mongo.Collection) *MongoS
 }
 
 func (s *MongoStorage) NewAddressList(ctx context.Context, addressList *AddressList) (*AddressList, error) {
-	ctx, _ = context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, _ = context.WithTimeout(context.Background(), cfg.Database.Timeout*time.Second)
 	res, err := s.coll.InsertOne(ctx, &AddressListMongo{
 		Name:      addressList.Name,
 		Addresses: addressList.Addresses,
@@ -33,7 +33,7 @@ func (s *MongoStorage) NewAddressList(ctx context.Context, addressList *AddressL
 }
 
 func (s *MongoStorage) GetAllAddressLists(ctx context.Context) ([]*AddressList, error) {
-	ctx, _ = context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, _ = context.WithTimeout(context.Background(), cfg.Database.Timeout*time.Second)
 	cur, err := s.coll.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func (s *MongoStorage) GetAddressListById(ctx context.Context, id string) (*Addr
 		return nil, err
 	}
 
-	ctx, _ = context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, _ = context.WithTimeout(context.Background(), cfg.Database.Timeout*time.Second)
 	res := s.coll.FindOne(ctx, bson.M{"_id": objectID})
 
 	if res.Err() == nil {
@@ -94,7 +94,7 @@ func (s *MongoStorage) GetAddressListById(ctx context.Context, id string) (*Addr
 }
 
 func (s *MongoStorage) GetAddressListByName(ctx context.Context, name string) (*AddressList, error) {
-	ctx, _ = context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, _ = context.WithTimeout(context.Background(), cfg.Database.Timeout*time.Second)
 	res := s.coll.FindOne(ctx, bson.M{"name": name})
 
 	if res.Err() == nil {
@@ -198,7 +198,7 @@ func (s *MongoStorage) RemoveAddressListById(ctx context.Context, id string) (*A
 		return nil, errors.New("invalid addressListId")
 	}
 
-	ctx, _ = context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, _ = context.WithTimeout(context.Background(), cfg.Database.Timeout*time.Second)
 	res, err := s.coll.DeleteOne(ctx, bson.M{"_id": objectID})
 	if err != nil {
 		return nil, err
