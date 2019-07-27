@@ -12,16 +12,17 @@ func ListAddressLists(w http.ResponseWriter, r *http.Request) {
 	case nil:
 		if err != nil {
 			render.Render(w, r, ErrInternalServerError(err))
-			return
 		}
 
 		if err := render.RenderList(w, r, ListAddressListJSONResponse(results)); err != nil {
 			render.Render(w, r, ErrRender(err))
-			return
 		}
 	case "rsc":
-		w.Write(ListAddressListTextResponse(results))
-		return
+		if out, err := ListAddressListsTextResponse(results); err != nil {
+			render.Render(w, r, ErrRender(err))
+		} else {
+			w.Write(out)
+		}
 	}
 }
 
@@ -50,11 +51,13 @@ func GetAddressList(w http.ResponseWriter, r *http.Request) {
 	case nil:
 		if err := render.Render(w, r, NewAddressListResponse(addressList)); err != nil {
 			render.Render(w, r, ErrRender(err))
-			return
 		}
 	case "rsc":
-		w.Write(GetAddressListTextResponse(addressList))
-		return
+		if out, err := GetAddressListTextResponse(addressList); err != nil {
+			render.Render(w, r, ErrRender(err))
+		} else {
+			w.Write(out)
+		}
 	}
 }
 
@@ -112,7 +115,7 @@ func PatchAddressList(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	default:
-		render.Render(w, r, ErrInvalidRequest(errors.New("Invalid value of Action field.")))
+		render.Render(w, r, ErrInvalidRequest(errors.New("Invalid value of Action field")))
 	}
 
 	render.Render(w, r, NewAddressListResponse(addressList))

@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"github.com/go-chi/render"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
@@ -86,34 +85,22 @@ func addressListContainsAddress(addr string, addressList *AddressList) bool {
 	return false
 }
 
-func ListAddressListTextResponse(addressLists []*AddressList) []byte {
+func ListAddressListsTextResponse(addressLists []*AddressList) ([]byte, error) {
 	output := bytes.Buffer{}
-	for _, addressList := range addressLists {
-		output.Write(GetAddressListTextResponse(addressList))
+	err := templates.ExecuteTemplate(&output, "ListAddressLists", addressLists)
+	if err != nil {
+		return nil, err
 	}
-	return output.Bytes()
+
+	return output.Bytes(), nil
 }
 
-func GetAddressListTextResponse(addressList *AddressList) []byte {
+func GetAddressListTextResponse(addressList *AddressList) ([]byte, error) {
 	output := bytes.Buffer{}
-	var disabled string
-	for _, addr := range addressList.Addresses {
-		switch addr.Disabled {
-		case true:
-			disabled = "yes"
-		case false:
-			disabled = "no"
-		}
-
-		str := fmt.Sprintf("/ip firewall address-list add list=%s address=%s disabled=%s", addressList.Name, addr.Address, disabled)
-
-		if addr.Comment != "" {
-			str += fmt.Sprintf(" comment=%s\n", addr.Comment)
-		} else {
-			str += "\n"
-		}
-
-		output.WriteString(str)
+	err := templates.ExecuteTemplate(&output, "GetAddressList", addressList)
+	if err != nil {
+		return nil, err
 	}
-	return output.Bytes()
+
+	return output.Bytes(), nil
 }

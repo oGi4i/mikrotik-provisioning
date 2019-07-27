@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"log"
 	"net/http"
+	"text/template"
 	"time"
 )
 
@@ -22,6 +23,7 @@ var (
 	users        = []*User{}
 	cfg          = &YamlConfig{}
 	api          = &Implementation{}
+	templates    = &template.Template{}
 )
 
 func init() {

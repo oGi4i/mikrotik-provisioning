@@ -1,0 +1,2 @@
+{{$list := .Name}}{{range .Addresses}}/ip address-list add list={{$list}} address={{.Address}} disabled={{ if .Disabled | eq false }}no{{else}}yes{{end}}{{if .Comment}} comment={{.Comment}}{{end}}
+{{end}}
