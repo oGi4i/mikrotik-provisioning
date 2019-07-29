@@ -95,7 +95,7 @@ func EnsureAuth(next http.Handler) http.Handler {
 }
 
 func CheckAcceptHeader(contentTypes ...string) func(next http.Handler) http.Handler {
-	cT := []string{}
+	cT := make([]string, 0)
 	for _, t := range contentTypes {
 		cT = append(cT, strings.ToLower(t))
 	}

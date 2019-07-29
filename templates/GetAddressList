@@ -1,2 +1,55 @@
-{{$list := .Name}}{{range .Addresses}}/ip address-list add list={{$list}} address={{.Address}} disabled={{ if .Disabled | eq false }}no{{else}}yes{{end}}{{if .Comment}} comment={{.Comment}}{{end}}
-{{end}}
+do {
+    :local newACL {"#(.Name)#"={#(range $index, $addr := .Addresses)##(if $index)#;#(end)#"#($addr.Address)#"={"disabled"=#($addr.Disabled)#; "comment"="#($addr.Comment)#"; "exists"=false}#(end)#}}
+    :local listOfACLs ({})
+
+    :foreach l,addrs in=$newACL do={
+        :set listOfACLs [:toarray ($listOfACLs . "," . $l)]
+        :foreach k,v in=$addrs do={
+            :foreach addr in=[/ip firewall address-list find list=$l dynamic=no] do={
+                :if ([/ip firewall address-list get $addr address] = $k) do={
+                    :local c [/ip firewall address-list get $addr comment]
+                    :set ($v->"exists") true
+                    :if ([/ip firewall address-list get $addr disabled] != ($v->"disabled")) do={
+                        :if (($v->"disabled") = false) do={
+                            #/ip firewall address-list enable $addr
+                            :log info ("Enabled address: " . $k . " for address-list: " . $l)
+                        } else={
+                            #/ip firewall address-list disable $addr
+                            :log info ("Disabled address: " . $k . " for address-list: " . $l)
+                        }
+                    }
+                    :if ($c != ($v->"comment")) do={
+                        #/ip firewall address-list enable $addr
+                        :log info ("Changed comment for address: \"" . $k . "\" from: \"" . $c . "\" to: \"" . ($v->"comment") . "\" for address-list: " . $l)
+                    }
+                }
+            }
+        }
+    }
+    :foreach l,addrs in=$newACL do={
+        :foreach k,v in=$addrs do={
+            :if (($v->"exists") = false) do={
+                :local c ($v->"comment")
+                :local d
+                :if (($v->"disabled") = false) do={
+                    :set $d "no"
+                } else {
+                    :set $d "yes"
+                }
+                #/ip firewall address-list add list=$l address=$k disabled=$d comment=$c
+                :log info ("Added new address: \"" . $k . "\", enabled: " . !($v->"disabled") . ", comment: \"" . $c . "\" for address-list: " . $l)
+            }
+        }
+    }
+    :foreach l in=$listOfACLs do={
+        :foreach id in=[/ip firewall address-list find list=$l dynamic=no] do={
+            :local address [/ip firewall address-list get $id address]
+            :if ([:typeof ($newACL->$l->$address)] != [:typeof ({})]) do={
+                #/ip firewall address-list disable $addr
+                :log info ("Removed old address: " . $address . " from address-list: " . $l)
+            }
+        }
+    }
+} on-error={
+    :log error "Error while executing UpdateACL script"
+}

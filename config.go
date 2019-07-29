@@ -3,7 +3,6 @@ package main
 import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"text/template"
 	"time"
 )
 
@@ -44,17 +43,18 @@ func (cfg *YamlConfig) initConfig() error {
 	}
 
 	users = cfg.Access.Users
-	templates = cfg.parseTemplates()
+
+	templates.Delims("#(", ")#")
+	_, err = templates.ParseFiles(cfg.getTemplatesPaths()...)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func (cfg *YamlConfig) parseTemplates() *template.Template {
-	return template.Must(template.ParseFiles(cfg.getTemplatesPaths()...))
-}
-
 func (cfg *YamlConfig) getTemplatesPaths() []string {
-	result := []string{}
+	result := make([]string, 0)
 	for _, t := range cfg.Application.Templates {
 		result = append(result, t.Path)
 	}

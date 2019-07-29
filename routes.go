@@ -16,28 +16,9 @@ func setRoutes(r *chi.Mux) {
 			r.With(EnsureAuth).With(EnsureAddressListExists(api)).Delete("/", DeleteAddressList) // DELETE /address-list/123
 		})
 
-		r.With(EnsureAddressListExists(api)).Get("/{addressListName:[A-Za-z0-9]+}", GetAddressList)                        // GET /address-list/whats-up
-		r.With(EnsureAuth).With(EnsureAddressListExists(api)).Put("/{addressListName:[A-Za-z0-9]+}", UpdateAddressList)    // PUT /address-list/whats-up
-		r.With(EnsureAuth).With(EnsureAddressListExists(api)).Patch("/{addressListName:[A-Za-z0-9]+}", PatchAddressList)   // PATCH /address-list/whats-up
-		r.With(EnsureAuth).With(EnsureAddressListExists(api)).Delete("/{addressListName:[A-Za-z0-9]+}", DeleteAddressList) // DELETE /address-list/whats-up
+		r.With(EnsureAddressListExists(api)).Get("/{addressListName:[A-Za-z0-9-]+}", GetAddressList)                        // GET /address-list/whats-up
+		r.With(EnsureAuth).With(EnsureAddressListExists(api)).Put("/{addressListName:[A-Za-z0-9-]+}", UpdateAddressList)    // PUT /address-list/whats-up
+		r.With(EnsureAuth).With(EnsureAddressListExists(api)).Patch("/{addressListName:[A-Za-z0-9-]+}", PatchAddressList)   // PATCH /address-list/whats-up
+		r.With(EnsureAuth).With(EnsureAddressListExists(api)).Delete("/{addressListName:[A-Za-z0-9-]+}", DeleteAddressList) // DELETE /address-list/whats-up
 	})
-
-	// Mount the admin sub-router, which btw is the same as:
-	// r.Route("/admin", func(r chi.Router) { admin routes here })
-	//r.Mount("/admin", adminRouter())
 }
-
-/*func adminRouter() chi.Router {
-	r := chi.NewRouter()
-	r.Use(EnsureAuth)
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("admin: index"))
-	})
-	r.Get("/accounts", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("admin: list accounts.."))
-	})
-	r.Get("/users/{userId}", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(fmt.Sprintf("admin: view user id %v", chi.URLParam(r, "userId"))))
-	})
-	return r
-}*/
