@@ -11,15 +11,15 @@ do {
                     :set ($v->"exists") true
                     :if ([/ip firewall address-list get $addr disabled] != ($v->"disabled")) do={
                         :if (($v->"disabled") = false) do={
-                            #/ip firewall address-list enable $addr
+                            /ip firewall address-list enable $addr
                             :log info ("Enabled address: " . $k . " for address-list: " . $l)
                         } else={
-                            #/ip firewall address-list disable $addr
+                            /ip firewall address-list disable $addr
                             :log info ("Disabled address: " . $k . " for address-list: " . $l)
                         }
                     }
                     :if ($c != ($v->"comment")) do={
-                        #/ip firewall address-list enable $addr
+                        /ip firewall address-list set $addr comment=($v->"comment")
                         :log info ("Changed comment for address: \"" . $k . "\" from: \"" . $c . "\" to: \"" . ($v->"comment") . "\" for address-list: " . $l)
                     }
                 }
@@ -33,10 +33,10 @@ do {
                 :local d
                 :if (($v->"disabled") = false) do={
                     :set $d "no"
-                } else {
+                } else={
                     :set $d "yes"
                 }
-                #/ip firewall address-list add list=$l address=$k disabled=$d comment=$c
+                /ip firewall address-list add list=$l address=$k disabled=$d comment=$c
                 :log info ("Added new address: \"" . $k . "\", enabled: " . !($v->"disabled") . ", comment: \"" . $c . "\" for address-list: " . $l)
             }
         }
@@ -45,7 +45,7 @@ do {
         :foreach id in=[/ip firewall address-list find list=$l dynamic=no] do={
             :local address [/ip firewall address-list get $id address]
             :if ([:typeof ($newACL->$l->$address)] != [:typeof ({})]) do={
-                #/ip firewall address-list disable $addr
+                /ip firewall address-list remove $addr
                 :log info ("Removed old address: " . $address . " from address-list: " . $l)
             }
         }
