@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   mikrotik-acl:
-    image: mikrotik-acl:latest
+    image: ogi4i/mikrotik-acl:latest
     container_name: mikrotik-acl
     hostname: mikrotik-acl
     depends_on:
@@ -10,7 +10,6 @@ services:
       - 3333:3333
     volumes:
       - ./config.yml:/app/config.yml
-      - ./templates:/app/templates
   mongo:
     image: mongo:latest
     container_name: mongo
