@@ -9,21 +9,21 @@ import (
 )
 
 type Address struct {
-	Address  string `json:"address" bson:"address"`
-	Disabled bool   `json:"disabled,omitempty" bson:"disabled,omitempty"`
-	Comment  string `json:"comment,omitempty" bson:"comment,omitempty"`
+	Address  string `json:"address" bson:"address" validate:"required,ipv4|fqdn"`
+	Disabled bool   `json:"disabled,omitempty" bson:"disabled,omitempty" validate:"omitempty"`
+	Comment  string `json:"comment,omitempty" bson:"comment,omitempty" validate:"omitempty,comment"`
 }
 
 type AddressListMongo struct {
-	ID        primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	Name      string             `json:"name" bson:"name"`
-	Addresses []Address          `json:"addresses" bson:"addresses"`
+	ID        primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty" validate:"required"`
+	Name      string             `json:"name" bson:"name" validate:"required,addresslistname"`
+	Addresses []Address          `json:"addresses" bson:"addresses" validate:"required"`
 }
 
 type AddressList struct {
-	ID        string    `json:"id,omitempty"`
-	Name      string    `json:"name"`
-	Addresses []Address `json:"addresses"`
+	ID        string    `json:"id,omitempty" validate:"omitempty"`
+	Name      string    `json:"name" validate:"required,addresslistname"`
+	Addresses []Address `json:"addresses" validate:"required"`
 }
 
 type AddressListRequest struct {
@@ -35,8 +35,8 @@ type AddressListResponse struct {
 }
 
 type AddressListPatchRequest struct {
-	Action    string    `json:"action"`
-	Addresses []Address `json:"addresses"`
+	Action    string    `json:"action" validate:"required,oneof=add remove"`
+	Addresses []Address `json:"addresses" validate:"required"`
 }
 
 func (a *AddressListRequest) Bind(r *http.Request) error {

@@ -7,29 +7,29 @@ import (
 )
 
 type YamlConfig struct {
-	Access      ConfigAccess      `yaml:"access"`
-	Database    ConfigDatabase    `yaml:"database"`
-	Application ConfigApplication `yaml:"application"`
+	Access      ConfigAccess      `yaml:"access" validate:"required"`
+	Database    ConfigDatabase    `yaml:"database" validate:"required"`
+	Application ConfigApplication `yaml:"application" validate:"required"`
 }
 
 type ConfigAccess struct {
-	Users []*User `yaml:"users"`
+	Users []*User `yaml:"users" validate:"required"`
 }
 
 type ConfigDatabase struct {
-	DSN        string        `yaml:"dsn"`
-	Name       string        `yaml:"name"`
-	Collection string        `yaml:"collection"`
-	Timeout    time.Duration `yaml:"timeout"`
+	DSN        string        `yaml:"dsn" validate:"required,mongodsn"`
+	Name       string        `yaml:"name" validate:"required,alphanum"`
+	Collection string        `yaml:"collection" validate:"required,alphanum"`
+	Timeout    time.Duration `yaml:"timeout" validate:"required,min=1"`
 }
 
 type ConfigApplication struct {
-	Templates []*Template `yaml:"templates"`
+	Templates []*Template `yaml:"templates" validate:"required"`
 }
 
 type Template struct {
-	Name string `yaml:"name"`
-	Path string `yaml:"path"`
+	Name string `yaml:"name" validate:"required,alphanum"`
+	Path string `yaml:"path" validate:"required,file"`
 }
 
 func (cfg *YamlConfig) initConfig() error {
@@ -37,8 +37,12 @@ func (cfg *YamlConfig) initConfig() error {
 	if err != nil {
 		return err
 	}
-	err = yaml.Unmarshal(configFile, &cfg)
-	if err != nil {
+
+	if err := yaml.Unmarshal(configFile, &cfg); err != nil {
+		return err
+	}
+
+	if err := validate.Struct(cfg); err != nil {
 		return err
 	}
 

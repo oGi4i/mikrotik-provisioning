@@ -50,8 +50,11 @@ func EnsureAddressListNotExists(i *Implementation) func(next http.Handler) http.
 			r.Body.Close()
 			r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 
-			err = json.Unmarshal(bodyBytes, &addressList)
-			if err != nil {
+			if err := json.Unmarshal(bodyBytes, &addressList); err != nil {
+				render.Render(w, r, ErrInvalidRequest(err))
+				return
+			}
+			if err := validate.Struct(addressList); err != nil {
 				render.Render(w, r, ErrInvalidRequest(err))
 				return
 			}

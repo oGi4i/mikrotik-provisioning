@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"gopkg.in/go-playground/validator.v9"
 	"log"
 	"net/http"
 	"text/template"
@@ -24,11 +25,15 @@ var (
 	cfg          = &YamlConfig{}
 	api          = &Implementation{}
 	templates    = &template.Template{}
+	validate     = validator.New()
 )
 
 func init() {
-	err := cfg.initConfig()
-	if err != nil {
+	if err := registerValidators(validate); err != nil {
+		log.Fatalf("Failed to register custom validation functions with error: %q\n", err)
+	}
+
+	if err := cfg.initConfig(); err != nil {
 		log.Fatalf("Failed to initialize config with error: %q\n", err)
 	}
 }

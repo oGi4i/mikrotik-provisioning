@@ -19,6 +19,10 @@ func NewMongoStorage(client *mongo.Client, collection *mongo.Collection) *MongoS
 }
 
 func (s *MongoStorage) NewAddressList(ctx context.Context, addressList *AddressList) (*AddressList, error) {
+	if err := validate.Struct(addressList); err != nil {
+		return nil, err
+	}
+
 	ctx, _ = context.WithTimeout(context.Background(), cfg.Database.Timeout*time.Second)
 	res, err := s.coll.InsertOne(ctx, &AddressListMongo{
 		Name:      addressList.Name,
@@ -46,6 +50,10 @@ func (s *MongoStorage) GetAllAddressLists(ctx context.Context) ([]*AddressList, 
 
 		err := cur.Decode(&data)
 		if err != nil {
+			return nil, err
+		}
+
+		if err := validate.Struct(data); err != nil {
 			return nil, err
 		}
 
@@ -83,6 +91,10 @@ func (s *MongoStorage) GetAddressListById(ctx context.Context, id string) (*Addr
 			return nil, err
 		}
 
+		if err := validate.Struct(data); err != nil {
+			return nil, err
+		}
+
 		return &AddressList{
 			ID:        data.ID.Hex(),
 			Name:      data.Name,
@@ -112,6 +124,10 @@ func (s *MongoStorage) GetAddressListByName(ctx context.Context, name string) (*
 			return nil, err
 		}
 
+		if err := validate.Struct(data); err != nil {
+			return nil, err
+		}
+
 		return &AddressList{
 			ID:        data.ID.Hex(),
 			Name:      data.Name,
@@ -123,6 +139,10 @@ func (s *MongoStorage) GetAddressListByName(ctx context.Context, name string) (*
 }
 
 func (s *MongoStorage) UpdateAddressListById(ctx context.Context, id string, addressList *AddressList) (*AddressList, error) {
+	if err := validate.Struct(addressList); err != nil {
+		return nil, err
+	}
+
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
@@ -143,6 +163,10 @@ func (s *MongoStorage) UpdateAddressListById(ctx context.Context, id string, add
 		return nil, err
 	}
 
+	if err := validate.Struct(data); err != nil {
+		return nil, err
+	}
+
 	return addressList, nil
 }
 
@@ -160,6 +184,10 @@ func (s *MongoStorage) AddAddressesToAddressListById(ctx context.Context, id str
 	bsonA := primitive.A{}
 	ok := true
 	for _, a := range addresses {
+		if err := validate.Struct(a); err != nil {
+			return nil, err
+		}
+
 		for _, b := range currentData.Addresses {
 			if b == a {
 				ok = false
@@ -184,8 +212,16 @@ func (s *MongoStorage) AddAddressesToAddressListById(ctx context.Context, id str
 		return nil, err
 	}
 
+	if err := validate.Struct(data); err != nil {
+		return nil, err
+	}
+
 	newData, err := s.GetAddressListById(ctx, id)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := validate.Struct(newData); err != nil {
 		return nil, err
 	}
 
@@ -217,6 +253,10 @@ func (s *MongoStorage) RemoveAddressesFromAddressListById(ctx context.Context, i
 		return nil, err
 	}
 
+	if err := validate.Struct(currentData); err != nil {
+		return nil, err
+	}
+
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
@@ -225,6 +265,10 @@ func (s *MongoStorage) RemoveAddressesFromAddressListById(ctx context.Context, i
 	bsonA := primitive.A{}
 	ok := false
 	for _, a := range addresses {
+		if err := validate.Struct(a); err != nil {
+			return nil, err
+		}
+
 		for _, b := range currentData.Addresses {
 			if b == a {
 				ok = true
@@ -249,8 +293,16 @@ func (s *MongoStorage) RemoveAddressesFromAddressListById(ctx context.Context, i
 		return nil, err
 	}
 
+	if err := validate.Struct(data); err != nil {
+		return nil, err
+	}
+
 	newData, err := s.GetAddressListById(ctx, id)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := validate.Struct(newData); err != nil {
 		return nil, err
 	}
 
