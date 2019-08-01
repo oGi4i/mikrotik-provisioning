@@ -14,6 +14,10 @@ func NewStructStorage(data []*AddressList) *StructStorage {
 }
 
 func (s *StructStorage) NewAddressList(ctx context.Context, addressList *AddressList) (*AddressList, error) {
+	if err := validate.Struct(addressList); err != nil {
+		return nil, err
+	}
+
 	addressLists = append(addressLists, addressList)
 
 	return addressList, nil
@@ -29,6 +33,7 @@ func (s *StructStorage) GetAddressListById(ctx context.Context, id string) (*Add
 			return a, nil
 		}
 	}
+
 	return nil, errors.New("address list not found")
 }
 
@@ -38,16 +43,22 @@ func (s *StructStorage) GetAddressListByName(ctx context.Context, name string) (
 			return a, nil
 		}
 	}
+
 	return nil, errors.New("address list not found")
 }
 
 func (s *StructStorage) UpdateAddressListById(ctx context.Context, id string, addressList *AddressList) (*AddressList, error) {
+	if err := validate.Struct(addressList); err != nil {
+		return nil, err
+	}
+
 	for i, a := range addressLists {
 		if a.ID == id {
 			addressLists[i] = addressList
 			return addressList, nil
 		}
 	}
+
 	return nil, errors.New("address list not found")
 }
 
@@ -55,6 +66,10 @@ func (s *StructStorage) AddAddressesToAddressListById(ctx context.Context, id st
 	for _, a := range addressLists {
 		if a.ID == id {
 			for _, b := range addresses {
+				if err := validate.Struct(b); err != nil {
+					return nil, err
+				}
+
 				if addressListContainsAddress(b.Address, a) {
 					continue
 				}
@@ -63,6 +78,7 @@ func (s *StructStorage) AddAddressesToAddressListById(ctx context.Context, id st
 			return a, nil
 		}
 	}
+
 	return nil, errors.New("address list not found")
 }
 
@@ -73,6 +89,7 @@ func (s *StructStorage) RemoveAddressListById(ctx context.Context, id string) (*
 			return a, nil
 		}
 	}
+
 	return nil, errors.New("address list not found")
 }
 
@@ -80,6 +97,10 @@ func (s *StructStorage) RemoveAddressesFromAddressListById(ctx context.Context, 
 	for _, a := range addressLists {
 		if a.ID == id {
 			for _, b := range addresses {
+				if err := validate.Struct(b); err != nil {
+					return nil, err
+				}
+
 				if addressListContainsAddress(b.Address, a) {
 					if err := s.removeAddressFromAddressList(b, a); err != nil {
 						return nil, err
@@ -89,15 +110,21 @@ func (s *StructStorage) RemoveAddressesFromAddressListById(ctx context.Context, 
 			return a, nil
 		}
 	}
+
 	return nil, errors.New("address list not found")
 }
 
 func (s *StructStorage) removeAddressFromAddressList(address Address, addressList *AddressList) error {
+	if err := validate.Struct(addressList); err != nil {
+		return err
+	}
+
 	for i, a := range addressList.Addresses {
 		if a == address {
 			addressList.Addresses = append((addressList.Addresses)[:i], (addressList.Addresses)[i+1:]...)
 			return nil
 		}
 	}
+
 	return errors.New("address not found")
 }
