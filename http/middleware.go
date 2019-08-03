@@ -24,9 +24,7 @@ func EnsureAddressListExists(i *pkg.Implementation) func(next http.Handler) http
 			var err error
 
 			ctx := context.Background()
-			if addressListId := chi.URLParam(r, "addressListId"); addressListId != "" {
-				addressList, err = i.Storage.GetAddressListById(ctx, addressListId)
-			} else if addressListName := chi.URLParam(r, "addressListName"); addressListName != "" {
+			if addressListName := chi.URLParam(r, "addressListName"); addressListName != "" {
 				addressList, err = i.Storage.GetAddressListByName(ctx, addressListName)
 			} else {
 				render.Render(w, r, types.ErrNotFound)
@@ -230,9 +228,7 @@ func EnsureStaticDNSEntryExists(i *pkg.Implementation) func(next http.Handler) h
 			var err error
 
 			ctx := context.Background()
-			if staticDNSId := chi.URLParam(r, "staticDNSId"); staticDNSId != "" {
-				entry, err = i.Storage.GetStaticDNSEntryById(ctx, staticDNSId)
-			} else if staticDNSName := chi.URLParam(r, "staticDNSName"); staticDNSName != "" {
+			if staticDNSName := chi.URLParam(r, "staticDNSName"); staticDNSName != "" {
 				entry, err = i.Storage.GetStaticDNSEntryByName(ctx, staticDNSName)
 			} else {
 				render.Render(w, r, types.ErrNotFound)
@@ -245,6 +241,52 @@ func EnsureStaticDNSEntryExists(i *pkg.Implementation) func(next http.Handler) h
 
 			c := context.WithValue(ctx, "staticDNSEntry", entry)
 			next.ServeHTTP(w, r.WithContext(c))
+		}
+		return http.HandlerFunc(fn)
+	}
+}
+
+func EnsureStaticDNSEntryNotExists(i *pkg.Implementation) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			entry := new(types.StaticDNSEntry)
+			var err error
+
+			if staticDNSName := chi.URLParam(r, "staticDNSName"); staticDNSName != "" {
+				entry, err = i.Storage.GetStaticDNSEntryByName(r.Context(), staticDNSName)
+			} else {
+				bodyBytes, _ := ioutil.ReadAll(r.Body)
+				r.Body.Close()
+				r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
+				if err := json.Unmarshal(bodyBytes, entry); err != nil {
+					render.Render(w, r, types.ErrInvalidRequest(err))
+					return
+				}
+				if err := valid.Validate.Struct(entry); err != nil {
+					render.Render(w, r, types.ErrInvalidRequest(err))
+					return
+				}
+
+				entries, err := i.Storage.GetAllStaticDNS(r.Context())
+				if err != nil {
+					render.Render(w, r, types.ErrInternalServerError(err))
+					return
+				}
+
+				for _, e := range entries {
+					if e.Name == entry.Name {
+						render.Render(w, r, types.ErrInvalidRequest(errors.New(fmt.Sprintf("statis DNS entry already exists: %s", e.Name))))
+						return
+					}
+				}
+			}
+			if err != nil {
+				render.Render(w, r, types.ErrInternalServerError(err))
+				return
+			}
+
+			next.ServeHTTP(w, r)
 		}
 		return http.HandlerFunc(fn)
 	}

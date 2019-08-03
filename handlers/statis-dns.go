@@ -34,7 +34,7 @@ func CreateBatchStaticDNSEntries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	list, err := pkg.API.Storage.NewStaticDNSBatch(r.Context(), data.Entries)
+	list, err := pkg.API.Storage.CreateStaticDNSEntriesFromBatch(r.Context(), data.Entries)
 	if err != nil {
 		render.Render(w, r, types.ErrInternalServerError(err))
 		return
@@ -51,7 +51,7 @@ func UpdateBatchStaticDNSEntries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results, err := pkg.API.Storage.UpdateStaticDNSBatch(r.Context(), data.Entries)
+	results, err := pkg.API.Storage.UpdateStaticDNSEntriesFromBatch(r.Context(), data.Entries)
 	if err != nil {
 		render.Render(w, r, types.ErrInternalServerError(err))
 		return
@@ -76,4 +76,51 @@ func GetStaticDNSEntry(w http.ResponseWriter, r *http.Request) {
 			w.Write(out)
 		}
 	}
+}
+
+func CreateStaticDNSEntry(w http.ResponseWriter, r *http.Request) {
+	data := new(types.StaticDNSRequest)
+	if err := render.Bind(r, data); err != nil {
+		render.Render(w, r, types.ErrInvalidRequest(err))
+		return
+	}
+
+	staticDNSEntry := data.StaticDNSEntry
+	staticDNSEntry, err := pkg.API.Storage.CreateStaticDNSEntry(r.Context(), staticDNSEntry)
+	if err != nil {
+		render.Render(w, r, types.ErrInternalServerError(err))
+		return
+	}
+
+	render.Render(w, r, types.NewStaticDNSResponse(staticDNSEntry))
+}
+
+func UpdateStaticDNSEntry(w http.ResponseWriter, r *http.Request) {
+	staticDNSEntry := r.Context().Value("staticDNSEntry").(*types.StaticDNSEntry)
+
+	data := &types.StaticDNSRequest{StaticDNSEntry: staticDNSEntry}
+	if err := render.Bind(r, data); err != nil {
+		render.Render(w, r, types.ErrInvalidRequest(err))
+		return
+	}
+	staticDNSEntry = data.StaticDNSEntry
+	staticDNSEntry, err := pkg.API.Storage.UpdateStaticDNSEntryById(r.Context(), staticDNSEntry.ID, staticDNSEntry)
+	if err != nil {
+		render.Render(w, r, types.ErrInternalServerError(err))
+		return
+	}
+
+	render.Render(w, r, types.NewStaticDNSResponse(staticDNSEntry))
+}
+
+func DeleteStaticDNSEntry(w http.ResponseWriter, r *http.Request) {
+	staticDNSEntry := r.Context().Value("staticDNSEntry").(*types.StaticDNSEntry)
+
+	staticDNSEntry, err := pkg.API.Storage.RemoveStaticDNSEntryById(r.Context(), staticDNSEntry.ID)
+	if err != nil {
+		render.Render(w, r, types.ErrInvalidRequest(err))
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

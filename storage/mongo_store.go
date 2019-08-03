@@ -96,7 +96,7 @@ func createIndexes(ctx context.Context, coll *mongo.Collection, indexList []cfg.
 	return nil
 }
 
-func (s *MongoStorage) NewAddressList(ctx context.Context, addressList *types.AddressList) (*types.AddressList, error) {
+func (s *MongoStorage) CreateAddressList(ctx context.Context, addressList *types.AddressList) (*types.AddressList, error) {
 	c, _ := context.WithTimeout(ctx, cfg.Config.Database.Timeout*time.Second)
 	res, err := s.colls["address-list"].InsertOne(c, &types.AddressListMongo{
 		Name:      addressList.Name,
@@ -141,7 +141,7 @@ func (s *MongoStorage) GetAllAddressLists(ctx context.Context) ([]*types.Address
 	return result, nil
 }
 
-func (s *MongoStorage) GetAddressListById(ctx context.Context, id string) (*types.AddressList, error) {
+func (s *MongoStorage) getAddressListById(ctx context.Context, id string) (*types.AddressList, error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
@@ -224,7 +224,7 @@ func (s *MongoStorage) UpdateAddressListById(ctx context.Context, id string, add
 		Addresses: addressList.Addresses,
 	}, options.FindOneAndReplace().SetReturnDocument(options.After))
 	if res.Err() != nil {
-		return nil, err
+		return nil, res.Err()
 	}
 
 	data := new(types.AddressListMongo)
@@ -245,7 +245,7 @@ func (s *MongoStorage) UpdateAddressListById(ctx context.Context, id string, add
 }
 
 func (s *MongoStorage) AddAddressesToAddressListById(ctx context.Context, id string, addresses []types.Address) (*types.AddressList, error) {
-	currentData, err := s.GetAddressListById(ctx, id)
+	currentData, err := s.getAddressListById(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +273,7 @@ func (s *MongoStorage) AddAddressesToAddressListById(ctx context.Context, id str
 
 	res := s.colls["address-list"].FindOneAndUpdate(ctx, bson.M{"_id": objectID}, update)
 	if res.Err() != nil {
-		return nil, err
+		return nil, res.Err()
 	}
 
 	data := new(types.AddressListMongo)
@@ -286,7 +286,7 @@ func (s *MongoStorage) AddAddressesToAddressListById(ctx context.Context, id str
 		return nil, err
 	}
 
-	newData, err := s.GetAddressListById(ctx, id)
+	newData, err := s.getAddressListById(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +301,7 @@ func (s *MongoStorage) AddAddressesToAddressListById(ctx context.Context, id str
 func (s *MongoStorage) RemoveAddressListById(ctx context.Context, id string) (*types.AddressList, error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, errors.New("invalid addressListId")
+		return nil, err
 	}
 
 	c, _ := context.WithTimeout(ctx, cfg.Config.Database.Timeout*time.Second)
@@ -318,7 +318,7 @@ func (s *MongoStorage) RemoveAddressListById(ctx context.Context, id string) (*t
 }
 
 func (s *MongoStorage) RemoveAddressesFromAddressListById(ctx context.Context, id string, addresses []types.Address) (*types.AddressList, error) {
-	currentData, err := s.GetAddressListById(ctx, id)
+	currentData, err := s.getAddressListById(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -350,7 +350,7 @@ func (s *MongoStorage) RemoveAddressesFromAddressListById(ctx context.Context, i
 
 	res := s.colls["address-list"].FindOneAndUpdate(ctx, bson.M{"_id": objectID}, update)
 	if res.Err() != nil {
-		return nil, err
+		return nil, res.Err()
 	}
 
 	data := new(types.AddressListMongo)
@@ -363,7 +363,7 @@ func (s *MongoStorage) RemoveAddressesFromAddressListById(ctx context.Context, i
 		return nil, err
 	}
 
-	newData, err := s.GetAddressListById(ctx, id)
+	newData, err := s.getAddressListById(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -410,7 +410,7 @@ func (s *MongoStorage) GetAllStaticDNS(ctx context.Context) ([]*types.StaticDNSE
 	return result, nil
 }
 
-func (s *MongoStorage) NewStaticDNSBatch(ctx context.Context, entries []*types.StaticDNSEntry) ([]*types.StaticDNSEntry, error) {
+func (s *MongoStorage) CreateStaticDNSEntriesFromBatch(ctx context.Context, entries []*types.StaticDNSEntry) ([]*types.StaticDNSEntry, error) {
 	mongoEntries := make([]interface{}, len(entries))
 	for i, entry := range entries {
 		mongoEntries[i] = &types.StaticDNSEntryMongo{
@@ -436,7 +436,7 @@ func (s *MongoStorage) NewStaticDNSBatch(ctx context.Context, entries []*types.S
 	return entries, nil
 }
 
-func (s *MongoStorage) UpdateStaticDNSBatch(ctx context.Context, entries []*types.StaticDNSEntry) ([]*types.StaticDNSEntry, error) {
+func (s *MongoStorage) UpdateStaticDNSEntriesFromBatch(ctx context.Context, entries []*types.StaticDNSEntry) ([]*types.StaticDNSEntry, error) {
 	mongoEntries := make([]*types.StaticDNSEntryMongo, len(entries))
 	for i, entry := range entries {
 		mongoEntries[i] = &types.StaticDNSEntryMongo{
@@ -480,48 +480,6 @@ func (s *MongoStorage) UpdateStaticDNSBatch(ctx context.Context, entries []*type
 	return entries, nil
 }
 
-func (s *MongoStorage) GetStaticDNSEntryById(ctx context.Context, id string) (*types.StaticDNSEntry, error) {
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
-
-	c, _ := context.WithTimeout(ctx, cfg.Config.Database.Timeout*time.Second)
-	res := s.colls["static-dns"].FindOne(c, bson.M{"_id": objectID})
-
-	if res.Err() == nil {
-		if b, err := res.DecodeBytes(); err != nil {
-			if b.String() == "" && err.Error() == "mongo: no documents in result" {
-				return nil, nil
-			} else {
-				return nil, err
-			}
-		}
-
-		data := new(types.StaticDNSEntryMongo)
-		err := res.Decode(data)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := valid.Validate.Struct(data); err != nil {
-			return nil, err
-		}
-
-		return &types.StaticDNSEntry{
-			ID:       data.ID.Hex(),
-			Name:     data.Name,
-			Regexp:   data.Regexp,
-			Address:  data.Address,
-			TTL:      data.TTL,
-			Disabled: data.Disabled,
-			Comment:  data.Comment,
-		}, nil
-	} else {
-		return nil, res.Err()
-	}
-}
-
 func (s *MongoStorage) GetStaticDNSEntryByName(ctx context.Context, name string) (*types.StaticDNSEntry, error) {
 	c, _ := context.WithTimeout(ctx, cfg.Config.Database.Timeout*time.Second)
 	res := s.colls["static-dns"].FindOne(c, bson.M{"name": name})
@@ -557,4 +515,80 @@ func (s *MongoStorage) GetStaticDNSEntryByName(ctx context.Context, name string)
 	} else {
 		return nil, res.Err()
 	}
+}
+
+func (s *MongoStorage) CreateStaticDNSEntry(ctx context.Context, entry *types.StaticDNSEntry) (*types.StaticDNSEntry, error) {
+	c, _ := context.WithTimeout(ctx, cfg.Config.Database.Timeout*time.Second)
+	res, err := s.colls["static-dns"].InsertOne(c, &types.StaticDNSEntryMongo{
+		Name:     entry.Name,
+		Regexp:   entry.Regexp,
+		Address:  entry.Address,
+		TTL:      entry.TTL,
+		Disabled: entry.Disabled,
+		Comment:  entry.Comment,
+	})
+	if err != nil {
+		return nil, err
+	}
+	entry.ID = res.InsertedID.(primitive.ObjectID).Hex()
+
+	return entry, nil
+}
+
+func (s *MongoStorage) UpdateStaticDNSEntryById(ctx context.Context, id string, entry *types.StaticDNSEntry) (*types.StaticDNSEntry, error) {
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	res := s.colls["static-dns"].FindOneAndReplace(ctx, bson.M{"_id": objectID}, &types.StaticDNSEntryMongo{
+		Name:     entry.Name,
+		Regexp:   entry.Regexp,
+		Address:  entry.Address,
+		TTL:      entry.TTL,
+		Disabled: entry.Disabled,
+		Comment:  entry.Comment,
+	}, options.FindOneAndReplace().SetReturnDocument(options.After))
+	if res.Err() != nil {
+		return nil, res.Err()
+	}
+
+	data := new(types.StaticDNSEntryMongo)
+	err = res.Decode(data)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := valid.Validate.Struct(data); err != nil {
+		return nil, err
+	}
+
+	return &types.StaticDNSEntry{
+		ID:       data.ID.Hex(),
+		Name:     data.Name,
+		Regexp:   data.Regexp,
+		Address:  data.Address,
+		TTL:      data.TTL,
+		Disabled: data.Disabled,
+		Comment:  data.Comment,
+	}, nil
+}
+
+func (s *MongoStorage) RemoveStaticDNSEntryById(ctx context.Context, id string) (*types.StaticDNSEntry, error) {
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	c, _ := context.WithTimeout(ctx, cfg.Config.Database.Timeout*time.Second)
+	res, err := s.colls["static-dns"].DeleteOne(c, bson.M{"_id": objectID})
+	if err != nil {
+		return nil, err
+	}
+
+	if res.DeletedCount == 0 {
+		return nil, errors.New("failed deleting mongoDB object")
+	}
+
+	return nil, nil
 }

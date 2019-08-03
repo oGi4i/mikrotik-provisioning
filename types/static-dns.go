@@ -10,7 +10,7 @@ import (
 )
 
 type StaticDNSEntry struct {
-	ID       string `json:"id,omitempty" validate:"omitempty"`
+	ID       string `json:"-" validate:"omitempty"`
 	Name     string `json:"name" validate:"required,fqdn"`
 	Regexp   string `json:"regexp,omitempty" validate:"omitempty"`
 	Address  string `json:"address" validate:"required,ipv4"`

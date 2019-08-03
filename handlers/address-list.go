@@ -36,7 +36,7 @@ func CreateAddressList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	addressList := data.AddressList
-	id, err := pkg.API.Storage.NewAddressList(r.Context(), addressList)
+	id, err := pkg.API.Storage.CreateAddressList(r.Context(), addressList)
 	if err != nil {
 		render.Render(w, r, types.ErrInternalServerError(err))
 		return

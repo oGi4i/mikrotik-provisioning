@@ -28,7 +28,7 @@ func init() {
 	if err != nil {
 		log.Fatalf("failed to initialize MongoStorage with error: %q", err)
 	}
-	pkg.API = pkg.NewMikrotikAclAPI(storage)
+	pkg.API = pkg.NewMikrotikProvisioningAPI(storage)
 }
 
 func main() {

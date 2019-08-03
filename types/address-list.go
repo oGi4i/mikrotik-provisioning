@@ -16,13 +16,13 @@ type Address struct {
 }
 
 type AddressListMongo struct {
-	ID        primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty" validate:"required"`
-	Name      string             `json:"name" bson:"name" validate:"required,addresslistname"`
-	Addresses []Address          `json:"addresses" bson:"addresses" validate:"required"`
+	ID        primitive.ObjectID `bson:"_id,omitempty" validate:"required"`
+	Name      string             `bson:"name" validate:"required,addresslistname"`
+	Addresses []Address          `bson:"addresses" validate:"required"`
 }
 
 type AddressList struct {
-	ID        string    `json:"id,omitempty" validate:"omitempty"`
+	ID        string    `json:"-" validate:"omitempty"`
 	Name      string    `json:"name" validate:"required,addresslistname"`
 	Addresses []Address `json:"addresses" validate:"required"`
 }
