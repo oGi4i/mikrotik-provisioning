@@ -26,6 +26,11 @@ func EnsureAddressListExists(i *pkg.Implementation) func(next http.Handler) http
 			ctx := context.Background()
 			if addressListName := chi.URLParam(r, "addressListName"); addressListName != "" {
 				addressList, err = i.Storage.GetAddressListByName(ctx, addressListName)
+
+				if addressList == nil {
+					render.Render(w, r, types.ErrNotFound)
+					return
+				}
 			} else {
 				render.Render(w, r, types.ErrNotFound)
 				return
@@ -230,6 +235,11 @@ func EnsureStaticDNSEntryExists(i *pkg.Implementation) func(next http.Handler) h
 			ctx := context.Background()
 			if staticDNSName := chi.URLParam(r, "staticDNSName"); staticDNSName != "" {
 				entry, err = i.Storage.GetStaticDNSEntryByName(ctx, staticDNSName)
+
+				if entry == nil {
+					render.Render(w, r, types.ErrNotFound)
+					return
+				}
 			} else {
 				render.Render(w, r, types.ErrNotFound)
 				return
