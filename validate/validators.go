@@ -1,9 +1,11 @@
-package main
+package validate
 
 import (
 	"gopkg.in/go-playground/validator.v9"
 	"regexp"
 )
+
+var Validate = validator.New()
 
 func addressListNameValidator(fl validator.FieldLevel) bool {
 
@@ -50,7 +52,7 @@ func mongoDSNValidator(fl validator.FieldLevel) bool {
 	return true
 }
 
-func registerValidators(v *validator.Validate) error {
+func RegisterValidators(v *validator.Validate) error {
 	if err := v.RegisterValidation("addresslistname", addressListNameValidator); err != nil {
 		return err
 	}

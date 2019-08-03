@@ -1,4 +1,4 @@
-module mikrotik-acl
+module mikrotik_provisioning
 
 go 1.12
 

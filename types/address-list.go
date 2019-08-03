@@ -1,10 +1,11 @@
-package main
+package types
 
 import (
 	"bytes"
-	"errors"
 	"github.com/go-chi/render"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	cfg "mikrotik_provisioning/config"
+	valid "mikrotik_provisioning/validate"
 	"net/http"
 )
 
@@ -40,20 +41,16 @@ type AddressListPatchRequest struct {
 }
 
 func (a *AddressListRequest) Bind(r *http.Request) error {
-	if a.AddressList == nil {
-		return errors.New("missing required AddressList fields")
+	if err := valid.Validate.Struct(a); err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func (a *AddressListPatchRequest) Bind(r *http.Request) error {
-	if a.Addresses == nil {
-		return errors.New("missing required Addresses field")
-	}
-
-	if a.Action == "" {
-		return errors.New("missing required Action field")
+	if err := valid.Validate.Struct(a); err != nil {
+		return err
 	}
 
 	return nil
@@ -68,26 +65,17 @@ func (rd *AddressListResponse) Render(w http.ResponseWriter, r *http.Request) er
 }
 
 func ListAddressListJSONResponse(addressLists []*AddressList) []render.Renderer {
-	list := []render.Renderer{}
+	list := make([]render.Renderer, len(addressLists))
 
-	for _, addressList := range addressLists {
-		list = append(list, NewAddressListResponse(addressList))
+	for i, addressList := range addressLists {
+		list[i] = NewAddressListResponse(addressList)
 	}
 	return list
 }
 
-func addressListContainsAddress(addr string, addressList *AddressList) bool {
-	for _, v := range addressList.Addresses {
-		if v.Address == addr {
-			return true
-		}
-	}
-	return false
-}
-
 func ListAddressListsTextResponse(addressLists []*AddressList) ([]byte, error) {
 	output := bytes.Buffer{}
-	err := templates.ExecuteTemplate(&output, "ListAddressLists", addressLists)
+	err := cfg.Templates.ExecuteTemplate(&output, "ListAddressLists", addressLists)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +85,7 @@ func ListAddressListsTextResponse(addressLists []*AddressList) ([]byte, error) {
 
 func GetAddressListTextResponse(addressList *AddressList) ([]byte, error) {
 	output := bytes.Buffer{}
-	err := templates.ExecuteTemplate(&output, "GetAddressList", addressList)
+	err := cfg.Templates.ExecuteTemplate(&output, "GetAddressList", addressList)
 	if err != nil {
 		return nil, err
 	}

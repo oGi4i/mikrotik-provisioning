@@ -1,9 +1,9 @@
 version: '3.7'
 services:
   mikrotik-acl:
-    image: ogi4i/mikrotik-acl:latest
-    container_name: mikrotik-acl
-    hostname: mikrotik-acl
+    image: ogi4i/mikrotik-provisioning:latest
+    container_name: mikrotik-provisioning
+    hostname: mikrotik-provisioning
     depends_on:
       - mongo
     ports:

@@ -5,72 +5,42 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"gopkg.in/go-playground/validator.v9"
 	"log"
+	cfg "mikrotik_provisioning/config"
+	mux "mikrotik_provisioning/http"
+	"mikrotik_provisioning/pkg"
+	store "mikrotik_provisioning/storage"
+	valid "mikrotik_provisioning/validate"
 	"net/http"
-	"text/template"
-	"time"
-)
-
-const (
-	configFile = "config.yml"
-)
-
-var (
-	addressLists = []*AddressList{}
-	users        = []*User{}
-	cfg          = &YamlConfig{}
-	api          = &Implementation{}
-	templates    = &template.Template{}
-	validate     = validator.New()
 )
 
 func init() {
-	if err := registerValidators(validate); err != nil {
-		log.Fatalf("Failed to register custom validation functions with error: %q\n", err)
+	if err := valid.RegisterValidators(valid.Validate); err != nil {
+		log.Fatalf("failed to register custom validation functions with error: %q", err)
 	}
 
-	if err := cfg.initConfig(); err != nil {
-		log.Fatalf("Failed to initialize config with error: %q\n", err)
+	if err := cfg.Config.InitConfig(); err != nil {
+		log.Fatalf("failed to initialize config with error: %q", err)
 	}
+
+	ctx := context.Background()
+	storage, err := store.NewMongoStorage(ctx)
+	if err != nil {
+		log.Fatalf("failed to initialize MongoStorage with error: %q", err)
+	}
+	pkg.API = pkg.NewMikrotikAclAPI(storage)
 }
 
 func main() {
-	ctx := context.Background()
-	mongoDB, coll := NewDB(ctx)
-	storage := NewMongoStorage(mongoDB, coll)
-	api = NewMikrotikAclAPI(storage)
-
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.AllowContentType("application/json"))
-	r.Use(CheckAcceptHeader("*/*", "application/json", "text/plain"))
+	r.Use(mux.CheckAcceptHeader("*/*", "application/json", "text/plain"))
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 
-	setRoutes(r)
+	mux.SetRoutes(r)
 
 	http.ListenAndServe(":3333", r)
-}
-
-func NewDB(ctx context.Context) (*mongo.Client, *mongo.Collection) {
-	ctx, _ = context.WithTimeout(context.Background(), cfg.Database.Timeout*time.Second)
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.Database.DSN))
-	if err != nil {
-		log.Fatalf("Failed to connect to MongoDB: %q\n", err)
-	}
-
-	ctx, _ = context.WithTimeout(context.Background(), cfg.Database.Timeout*time.Second*5)
-	err = client.Ping(ctx, readpref.Nearest())
-	if err != nil {
-		log.Fatalf("Failed to ping MongoDB: %q\n", err)
-	}
-
-	collection := client.Database(cfg.Database.Name).Collection(cfg.Database.Collection)
-
-	return client, collection
 }
