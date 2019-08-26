@@ -12,6 +12,8 @@ import (
 	store "mikrotik_provisioning/storage"
 	valid "mikrotik_provisioning/validate"
 	"net/http"
+	"path/filepath"
+	"text/template"
 )
 
 func init() {
@@ -23,12 +25,24 @@ func init() {
 		log.Fatalf("failed to initialize config with error: %q", err)
 	}
 
+	templateFiles, err := filepath.Glob("templates/*")
+	if err != nil {
+		log.Fatalf("failed to get template filenames with glob with error: %q\n", err)
+	}
+
+	templates := new(template.Template)
+	templates, err = templates.Delims("#(", ")#").ParseFiles(templateFiles...)
+	if err != nil {
+		log.Fatalf("failed to parse template files with error: %q\n", err)
+	}
+
 	ctx := context.Background()
 	storage, err := store.NewMongoStorage(ctx)
 	if err != nil {
 		log.Fatalf("failed to initialize MongoStorage with error: %q", err)
 	}
-	pkg.API = pkg.NewMikrotikProvisioningAPI(storage)
+
+	pkg.API = pkg.NewMikrotikProvisioningAPI(storage, cfg.Config.Application, templates)
 }
 
 func main() {

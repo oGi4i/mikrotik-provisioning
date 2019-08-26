@@ -1,22 +1,20 @@
-package types
+package models
 
 import (
-	"bytes"
 	"github.com/go-chi/render"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	cfg "mikrotik_provisioning/config"
 	valid "mikrotik_provisioning/validate"
 	"net/http"
 )
 
 type StaticDNSEntry struct {
-	ID       string `json:"-" validate:"omitempty"`
-	Name     string `json:"name" validate:"required,fqdn"`
-	Regexp   string `json:"regexp,omitempty" validate:"omitempty"`
-	Address  string `json:"address" validate:"required,ipv4"`
-	TTL      string `json:"ttl" validate:"required"`
-	Disabled bool   `json:"disabled,omitempty" validate:"omitempty"`
-	Comment  string `json:"comment,omitempty" validate:"omitempty,comment"`
+	ID       string           `json:"-" validate:"omitempty"`
+	Name     string           `json:"name" validate:"required,fqdn"`
+	Regexp   string           `json:"regexp,omitempty" validate:"omitempty"`
+	Address  string           `json:"address" validate:"required,ipv4"`
+	TTL      RouterOSDuration `json:"ttl" validate:"required"`
+	Disabled bool             `json:"disabled,omitempty" validate:"omitempty"`
+	Comment  string           `json:"comment,omitempty" validate:"omitempty,comment"`
 }
 
 type StaticDNSEntryMongo struct {
@@ -24,7 +22,7 @@ type StaticDNSEntryMongo struct {
 	Name     string             `bson:"name" validate:"required,fqdn"`
 	Regexp   string             `bson:"regexp" validate:"omitempty"`
 	Address  string             `bson:"address" validate:"required,ipv4"`
-	TTL      string             `bson:"ttl" validate:"required"`
+	TTL      RouterOSDuration   `bson:"ttl" validate:"required"`
 	Disabled bool               `bson:"disabled,omitempty" validate:"omitempty"`
 	Comment  string             `bson:"comment,omitempty" validate:"omitempty,comment"`
 }
@@ -72,24 +70,4 @@ func ListStaticDNSJSONResponse(staticDNSList []*StaticDNSEntry) []render.Rendere
 		list[i] = NewStaticDNSResponse(staticDNS)
 	}
 	return list
-}
-
-func ListStaticDNSTextResponse(staticDNSList []*StaticDNSEntry) ([]byte, error) {
-	output := bytes.Buffer{}
-	err := cfg.Templates.ExecuteTemplate(&output, "ListStaticDNS", staticDNSList)
-	if err != nil {
-		return nil, err
-	}
-
-	return output.Bytes(), nil
-}
-
-func GetStaticDNSTextResponse(staticDNS *StaticDNSEntry) ([]byte, error) {
-	output := bytes.Buffer{}
-	err := cfg.Templates.ExecuteTemplate(&output, "GetStaticDNS", staticDNS)
-	if err != nil {
-		return nil, err
-	}
-
-	return output.Bytes(), nil
 }

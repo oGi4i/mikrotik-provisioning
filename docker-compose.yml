@@ -1,18 +1,18 @@
 version: '3.7'
 services:
-  mikrotik-acl:
+  mikrotik-provisioning:
     image: ogi4i/mikrotik-provisioning:latest
     container_name: mikrotik-provisioning
     hostname: mikrotik-provisioning
     depends_on:
-      - mongo
+      - mongo-mikrotik
     ports:
       - 3333:3333
     volumes:
       - ./config.yml:/app/config.yml
-  mongo:
+  mongo-mikrotik:
     image: mongo:latest
-    container_name: mongo
-    hostname: mongo
+    container_name: mongo-mikrotik
+    hostname: mongo-mikrotik
     volumes:
       - ./data:/data/db

@@ -3,24 +3,24 @@ package storage
 import (
 	"context"
 	"errors"
-	"mikrotik_provisioning/types"
+	"mikrotik_provisioning/models"
 	valid "mikrotik_provisioning/validate"
 )
 
 var (
-	addressLists  = []*types.AddressList{}
-	staticDNSList = []*types.StaticDNSEntry{}
+	addressLists  = make([]*models.AddressList, 0)
+	staticDNSList = make([]*models.StaticDNSEntry, 0)
 )
 
 type StructStorage struct {
-	data []*types.AddressList
+	data []*models.AddressList
 }
 
-func NewStructStorage(data []*types.AddressList) *StructStorage {
+func NewStructStorage(data []*models.AddressList) *StructStorage {
 	return &StructStorage{data}
 }
 
-func (s *StructStorage) NewAddressList(ctx context.Context, addressList *types.AddressList) (*types.AddressList, error) {
+func (s *StructStorage) NewAddressList(ctx context.Context, addressList *models.AddressList) (*models.AddressList, error) {
 	if err := valid.Validate.Struct(addressList); err != nil {
 		return nil, err
 	}
@@ -30,11 +30,11 @@ func (s *StructStorage) NewAddressList(ctx context.Context, addressList *types.A
 	return addressList, nil
 }
 
-func (s *StructStorage) GetAllAddressLists(ctx context.Context) ([]*types.AddressList, error) {
+func (s *StructStorage) GetAllAddressLists(ctx context.Context) ([]*models.AddressList, error) {
 	return addressLists, nil
 }
 
-func (s *StructStorage) GetAddressListById(ctx context.Context, id string) (*types.AddressList, error) {
+func (s *StructStorage) GetAddressListById(ctx context.Context, id string) (*models.AddressList, error) {
 	for _, a := range addressLists {
 		if a.ID == id {
 			return a, nil
@@ -44,7 +44,7 @@ func (s *StructStorage) GetAddressListById(ctx context.Context, id string) (*typ
 	return nil, errors.New("address list not found")
 }
 
-func (s *StructStorage) GetAddressListByName(ctx context.Context, name string) (*types.AddressList, error) {
+func (s *StructStorage) GetAddressListByName(ctx context.Context, name string) (*models.AddressList, error) {
 	for _, a := range addressLists {
 		if a.Name == name {
 			return a, nil
@@ -54,7 +54,7 @@ func (s *StructStorage) GetAddressListByName(ctx context.Context, name string) (
 	return nil, errors.New("address list not found")
 }
 
-func (s *StructStorage) UpdateAddressListById(ctx context.Context, id string, addressList *types.AddressList) (*types.AddressList, error) {
+func (s *StructStorage) UpdateAddressListById(ctx context.Context, id string, addressList *models.AddressList) (*models.AddressList, error) {
 	if err := valid.Validate.Struct(addressList); err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (s *StructStorage) UpdateAddressListById(ctx context.Context, id string, ad
 	return nil, errors.New("address list not found")
 }
 
-func (s *StructStorage) AddAddressesToAddressListById(ctx context.Context, id string, addresses []types.Address) (*types.AddressList, error) {
+func (s *StructStorage) AddAddressesToAddressListById(ctx context.Context, id string, addresses []models.Address) (*models.AddressList, error) {
 	for _, a := range addressLists {
 		if a.ID == id {
 			for _, b := range addresses {
@@ -89,7 +89,7 @@ func (s *StructStorage) AddAddressesToAddressListById(ctx context.Context, id st
 	return nil, errors.New("address list not found")
 }
 
-func (s *StructStorage) RemoveAddressListById(ctx context.Context, id string) (*types.AddressList, error) {
+func (s *StructStorage) RemoveAddressListById(ctx context.Context, id string) (*models.AddressList, error) {
 	for i, a := range addressLists {
 		if a.ID == id {
 			addressLists = append((addressLists)[:i], (addressLists)[i+1:]...)
@@ -100,7 +100,7 @@ func (s *StructStorage) RemoveAddressListById(ctx context.Context, id string) (*
 	return nil, errors.New("address list not found")
 }
 
-func (s *StructStorage) RemoveAddressesFromAddressListById(ctx context.Context, id string, addresses []types.Address) (*types.AddressList, error) {
+func (s *StructStorage) RemoveAddressesFromAddressListById(ctx context.Context, id string, addresses []models.Address) (*models.AddressList, error) {
 	for _, a := range addressLists {
 		if a.ID == id {
 			for _, b := range addresses {
@@ -121,7 +121,7 @@ func (s *StructStorage) RemoveAddressesFromAddressListById(ctx context.Context, 
 	return nil, errors.New("address list not found")
 }
 
-func (s *StructStorage) removeAddressFromAddressList(address types.Address, addressList *types.AddressList) error {
+func (s *StructStorage) removeAddressFromAddressList(address models.Address, addressList *models.AddressList) error {
 	if err := valid.Validate.Struct(addressList); err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func (s *StructStorage) removeAddressFromAddressList(address types.Address, addr
 	return errors.New("address not found")
 }
 
-func addressListContainsAddress(addr string, addressList *types.AddressList) bool {
+func addressListContainsAddress(addr string, addressList *models.AddressList) bool {
 	for _, v := range addressList.Addresses {
 		if v.Address == addr {
 			return true

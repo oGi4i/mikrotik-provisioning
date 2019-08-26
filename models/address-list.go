@@ -1,10 +1,8 @@
-package types
+package models
 
 import (
-	"bytes"
 	"github.com/go-chi/render"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	cfg "mikrotik_provisioning/config"
 	valid "mikrotik_provisioning/validate"
 	"net/http"
 )
@@ -71,24 +69,4 @@ func ListAddressListJSONResponse(addressLists []*AddressList) []render.Renderer 
 		list[i] = NewAddressListResponse(addressList)
 	}
 	return list
-}
-
-func ListAddressListsTextResponse(addressLists []*AddressList) ([]byte, error) {
-	output := bytes.Buffer{}
-	err := cfg.Templates.ExecuteTemplate(&output, "ListAddressLists", addressLists)
-	if err != nil {
-		return nil, err
-	}
-
-	return output.Bytes(), nil
-}
-
-func GetAddressListTextResponse(addressList *AddressList) ([]byte, error) {
-	output := bytes.Buffer{}
-	err := cfg.Templates.ExecuteTemplate(&output, "GetAddressList", addressList)
-	if err != nil {
-		return nil, err
-	}
-
-	return output.Bytes(), nil
 }

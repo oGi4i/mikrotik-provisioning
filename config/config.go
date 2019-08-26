@@ -4,7 +4,6 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	valid "mikrotik_provisioning/validate"
-	"text/template"
 	"time"
 )
 
@@ -13,14 +12,13 @@ const (
 )
 
 var (
-	Config    = &YamlConfig{}
-	Templates = &template.Template{}
+	Config = &YamlConfig{}
 )
 
 type YamlConfig struct {
-	Access      AccessConfig      `yaml:"access" validate:"required"`
-	Database    DatabaseConfig    `yaml:"database" validate:"required"`
-	Application ApplicationConfig `yaml:"application" validate:"required"`
+	Access      *AccessConfig      `yaml:"access" validate:"required"`
+	Database    *DatabaseConfig    `yaml:"database" validate:"required"`
+	Application *ApplicationConfig `yaml:"application" validate:"required"`
 }
 
 type AccessConfig struct {
@@ -33,16 +31,16 @@ type User struct {
 }
 
 type DatabaseConfig struct {
-	DSN         string                `yaml:"dsn" validate:"required,mongodsn"`
-	Name        string                `yaml:"name" validate:"required,alphanum"`
-	Collections []CollectionMapConfig `yaml:"collections" validate:"required"`
-	Timeout     time.Duration         `yaml:"timeout" validate:"required,min=1"`
+	DSN         string                 `yaml:"dsn" validate:"required,mongodsn"`
+	Name        string                 `yaml:"name" validate:"required,alphanum"`
+	Collections []*CollectionMapConfig `yaml:"collections" validate:"required"`
+	Timeout     time.Duration          `yaml:"timeout" validate:"required,min=1"`
 }
 
 type CollectionMapConfig struct {
-	Resource string                    `yaml:"resource" validate:"required,alphanum"`
-	Name     string                    `yaml:"name" validate:"required,alphanum"`
-	Indexes  []CollectionIndexesConfig `yaml:"indexes" validate:"required"`
+	Resource string                     `yaml:"resource" validate:"required,alphanum"`
+	Name     string                     `yaml:"name" validate:"required,alphanum"`
+	Indexes  []*CollectionIndexesConfig `yaml:"indexes" validate:"required"`
 }
 
 type CollectionIndexesConfig struct {
@@ -52,7 +50,6 @@ type CollectionIndexesConfig struct {
 }
 
 type ApplicationConfig struct {
-	Templates []*Template `yaml:"templates" validate:"required"`
 }
 
 type Template struct {
@@ -74,19 +71,5 @@ func (cfg *YamlConfig) InitConfig() error {
 		return err
 	}
 
-	Templates.Delims("#(", ")#")
-	_, err = Templates.ParseFiles(cfg.getTemplatesPaths()...)
-	if err != nil {
-		return err
-	}
-
 	return nil
-}
-
-func (cfg *YamlConfig) getTemplatesPaths() []string {
-	result := make([]string, 0)
-	for _, t := range cfg.Application.Templates {
-		result = append(result, t.Path)
-	}
-	return result
 }

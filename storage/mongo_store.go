@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	cfg "mikrotik_provisioning/config"
-	"mikrotik_provisioning/types"
+	"mikrotik_provisioning/models"
 	valid "mikrotik_provisioning/validate"
 	"time"
 )
@@ -54,7 +54,7 @@ func NewMongoStorage(ctx context.Context) (*MongoStorage, error) {
 	return &MongoStorage{cl: client, colls: colls}, nil
 }
 
-func createIndexes(ctx context.Context, coll *mongo.Collection, indexList []cfg.CollectionIndexesConfig) error {
+func createIndexes(ctx context.Context, coll *mongo.Collection, indexList []*cfg.CollectionIndexesConfig) error {
 	cur, err := coll.Indexes().List(ctx)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to get list of indexes for collection: %s from MongoDB with error: %q", coll.Name, err))
@@ -81,7 +81,7 @@ func createIndexes(ctx context.Context, coll *mongo.Collection, indexList []cfg.
 		}
 
 		if exists {
-			break
+			continue
 		}
 
 		res, err := coll.Indexes().CreateOne(ctx, mongo.IndexModel{
@@ -96,9 +96,9 @@ func createIndexes(ctx context.Context, coll *mongo.Collection, indexList []cfg.
 	return nil
 }
 
-func (s *MongoStorage) CreateAddressList(ctx context.Context, addressList *types.AddressList) (*types.AddressList, error) {
+func (s *MongoStorage) CreateAddressList(ctx context.Context, addressList *models.AddressList) (*models.AddressList, error) {
 	c, _ := context.WithTimeout(ctx, cfg.Config.Database.Timeout*time.Second)
-	res, err := s.colls["address-list"].InsertOne(c, &types.AddressListMongo{
+	res, err := s.colls["address-list"].InsertOne(c, &models.AddressListMongo{
 		Name:      addressList.Name,
 		Addresses: addressList.Addresses,
 	})
@@ -110,7 +110,7 @@ func (s *MongoStorage) CreateAddressList(ctx context.Context, addressList *types
 	return addressList, nil
 }
 
-func (s *MongoStorage) GetAllAddressLists(ctx context.Context) ([]*types.AddressList, error) {
+func (s *MongoStorage) GetAllAddressLists(ctx context.Context) ([]*models.AddressList, error) {
 	c, _ := context.WithTimeout(ctx, cfg.Config.Database.Timeout*time.Second)
 	cur, err := s.colls["address-list"].Find(ctx, bson.M{})
 	if err != nil {
@@ -118,9 +118,9 @@ func (s *MongoStorage) GetAllAddressLists(ctx context.Context) ([]*types.Address
 	}
 	defer cur.Close(c)
 
-	result := make([]*types.AddressList, 0)
+	result := make([]*models.AddressList, 0)
 	for cur.Next(ctx) {
-		data := new(types.AddressListMongo)
+		data := new(models.AddressListMongo)
 
 		err := cur.Decode(data)
 		if err != nil {
@@ -131,7 +131,7 @@ func (s *MongoStorage) GetAllAddressLists(ctx context.Context) ([]*types.Address
 			return nil, err
 		}
 
-		result = append(result, &types.AddressList{
+		result = append(result, &models.AddressList{
 			ID:        data.ID.Hex(),
 			Name:      data.Name,
 			Addresses: data.Addresses,
@@ -141,7 +141,7 @@ func (s *MongoStorage) GetAllAddressLists(ctx context.Context) ([]*types.Address
 	return result, nil
 }
 
-func (s *MongoStorage) getAddressListById(ctx context.Context, id string) (*types.AddressList, error) {
+func (s *MongoStorage) getAddressListById(ctx context.Context, id string) (*models.AddressList, error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
@@ -159,7 +159,7 @@ func (s *MongoStorage) getAddressListById(ctx context.Context, id string) (*type
 			}
 		}
 
-		data := new(types.AddressListMongo)
+		data := new(models.AddressListMongo)
 		err := res.Decode(data)
 		if err != nil {
 			return nil, err
@@ -169,7 +169,7 @@ func (s *MongoStorage) getAddressListById(ctx context.Context, id string) (*type
 			return nil, err
 		}
 
-		return &types.AddressList{
+		return &models.AddressList{
 			ID:        data.ID.Hex(),
 			Name:      data.Name,
 			Addresses: data.Addresses,
@@ -179,7 +179,7 @@ func (s *MongoStorage) getAddressListById(ctx context.Context, id string) (*type
 	}
 }
 
-func (s *MongoStorage) GetAddressListByName(ctx context.Context, name string) (*types.AddressList, error) {
+func (s *MongoStorage) GetAddressListByName(ctx context.Context, name string) (*models.AddressList, error) {
 	c, _ := context.WithTimeout(ctx, cfg.Config.Database.Timeout*time.Second)
 	res := s.colls["address-list"].FindOne(c, bson.M{"name": name})
 
@@ -192,7 +192,7 @@ func (s *MongoStorage) GetAddressListByName(ctx context.Context, name string) (*
 			}
 		}
 
-		data := new(types.AddressListMongo)
+		data := new(models.AddressListMongo)
 		err := res.Decode(data)
 		if err != nil {
 			return nil, err
@@ -202,7 +202,7 @@ func (s *MongoStorage) GetAddressListByName(ctx context.Context, name string) (*
 			return nil, err
 		}
 
-		return &types.AddressList{
+		return &models.AddressList{
 			ID:        data.ID.Hex(),
 			Name:      data.Name,
 			Addresses: data.Addresses,
@@ -212,13 +212,13 @@ func (s *MongoStorage) GetAddressListByName(ctx context.Context, name string) (*
 	}
 }
 
-func (s *MongoStorage) UpdateAddressListById(ctx context.Context, id string, addressList *types.AddressList) (*types.AddressList, error) {
+func (s *MongoStorage) UpdateAddressListById(ctx context.Context, id string, addressList *models.AddressList) (*models.AddressList, error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
 	}
 
-	res := s.colls["address-list"].FindOneAndReplace(ctx, bson.M{"_id": objectID}, &types.AddressListMongo{
+	res := s.colls["address-list"].FindOneAndReplace(ctx, bson.M{"_id": objectID}, &models.AddressListMongo{
 		ID:        objectID,
 		Name:      addressList.Name,
 		Addresses: addressList.Addresses,
@@ -227,7 +227,7 @@ func (s *MongoStorage) UpdateAddressListById(ctx context.Context, id string, add
 		return nil, res.Err()
 	}
 
-	data := new(types.AddressListMongo)
+	data := new(models.AddressListMongo)
 	err = res.Decode(data)
 	if err != nil {
 		return nil, err
@@ -237,14 +237,14 @@ func (s *MongoStorage) UpdateAddressListById(ctx context.Context, id string, add
 		return nil, err
 	}
 
-	return &types.AddressList{
+	return &models.AddressList{
 		ID:        data.ID.Hex(),
 		Name:      data.Name,
 		Addresses: data.Addresses,
 	}, nil
 }
 
-func (s *MongoStorage) AddAddressesToAddressListById(ctx context.Context, id string, addresses []types.Address) (*types.AddressList, error) {
+func (s *MongoStorage) AddAddressesToAddressListById(ctx context.Context, id string, addresses []models.Address) (*models.AddressList, error) {
 	currentData, err := s.getAddressListById(ctx, id)
 	if err != nil {
 		return nil, err
@@ -276,7 +276,7 @@ func (s *MongoStorage) AddAddressesToAddressListById(ctx context.Context, id str
 		return nil, res.Err()
 	}
 
-	data := new(types.AddressListMongo)
+	data := new(models.AddressListMongo)
 	err = res.Decode(data)
 	if err != nil {
 		return nil, err
@@ -298,7 +298,7 @@ func (s *MongoStorage) AddAddressesToAddressListById(ctx context.Context, id str
 	return newData, nil
 }
 
-func (s *MongoStorage) RemoveAddressListById(ctx context.Context, id string) (*types.AddressList, error) {
+func (s *MongoStorage) RemoveAddressListById(ctx context.Context, id string) (*models.AddressList, error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
@@ -317,7 +317,7 @@ func (s *MongoStorage) RemoveAddressListById(ctx context.Context, id string) (*t
 	return nil, nil
 }
 
-func (s *MongoStorage) RemoveAddressesFromAddressListById(ctx context.Context, id string, addresses []types.Address) (*types.AddressList, error) {
+func (s *MongoStorage) RemoveAddressesFromAddressListById(ctx context.Context, id string, addresses []models.Address) (*models.AddressList, error) {
 	currentData, err := s.getAddressListById(ctx, id)
 	if err != nil {
 		return nil, err
@@ -353,7 +353,7 @@ func (s *MongoStorage) RemoveAddressesFromAddressListById(ctx context.Context, i
 		return nil, res.Err()
 	}
 
-	data := new(types.AddressListMongo)
+	data := new(models.AddressListMongo)
 	err = res.Decode(data)
 	if err != nil {
 		return nil, err
@@ -375,7 +375,7 @@ func (s *MongoStorage) RemoveAddressesFromAddressListById(ctx context.Context, i
 	return newData, nil
 }
 
-func (s *MongoStorage) GetAllStaticDNS(ctx context.Context) ([]*types.StaticDNSEntry, error) {
+func (s *MongoStorage) GetAllStaticDNS(ctx context.Context) ([]*models.StaticDNSEntry, error) {
 	c, _ := context.WithTimeout(ctx, cfg.Config.Database.Timeout*time.Second)
 	cur, err := s.colls["static-dns"].Find(ctx, bson.M{})
 	if err != nil {
@@ -383,9 +383,9 @@ func (s *MongoStorage) GetAllStaticDNS(ctx context.Context) ([]*types.StaticDNSE
 	}
 	defer cur.Close(c)
 
-	result := make([]*types.StaticDNSEntry, 0)
+	result := make([]*models.StaticDNSEntry, 0)
 	for cur.Next(ctx) {
-		data := new(types.StaticDNSEntryMongo)
+		data := new(models.StaticDNSEntryMongo)
 
 		err := cur.Decode(data)
 		if err != nil {
@@ -396,7 +396,7 @@ func (s *MongoStorage) GetAllStaticDNS(ctx context.Context) ([]*types.StaticDNSE
 			return nil, err
 		}
 
-		result = append(result, &types.StaticDNSEntry{
+		result = append(result, &models.StaticDNSEntry{
 			ID:       data.ID.Hex(),
 			Name:     data.Name,
 			Regexp:   data.Regexp,
@@ -410,10 +410,10 @@ func (s *MongoStorage) GetAllStaticDNS(ctx context.Context) ([]*types.StaticDNSE
 	return result, nil
 }
 
-func (s *MongoStorage) CreateStaticDNSEntriesFromBatch(ctx context.Context, entries []*types.StaticDNSEntry) ([]*types.StaticDNSEntry, error) {
+func (s *MongoStorage) CreateStaticDNSEntriesFromBatch(ctx context.Context, entries []*models.StaticDNSEntry) ([]*models.StaticDNSEntry, error) {
 	mongoEntries := make([]interface{}, len(entries))
 	for i, entry := range entries {
-		mongoEntries[i] = &types.StaticDNSEntryMongo{
+		mongoEntries[i] = &models.StaticDNSEntryMongo{
 			Name:     entry.Name,
 			Regexp:   entry.Regexp,
 			Address:  entry.Address,
@@ -436,10 +436,10 @@ func (s *MongoStorage) CreateStaticDNSEntriesFromBatch(ctx context.Context, entr
 	return entries, nil
 }
 
-func (s *MongoStorage) UpdateStaticDNSEntriesFromBatch(ctx context.Context, entries []*types.StaticDNSEntry) ([]*types.StaticDNSEntry, error) {
-	mongoEntries := make([]*types.StaticDNSEntryMongo, len(entries))
+func (s *MongoStorage) UpdateStaticDNSEntriesFromBatch(ctx context.Context, entries []*models.StaticDNSEntry) ([]*models.StaticDNSEntry, error) {
+	mongoEntries := make([]*models.StaticDNSEntryMongo, len(entries))
 	for i, entry := range entries {
-		mongoEntries[i] = &types.StaticDNSEntryMongo{
+		mongoEntries[i] = &models.StaticDNSEntryMongo{
 			Name:     entry.Name,
 			Regexp:   entry.Regexp,
 			Address:  entry.Address,
@@ -456,7 +456,7 @@ func (s *MongoStorage) UpdateStaticDNSEntriesFromBatch(ctx context.Context, entr
 			return nil, res.Err()
 		}
 
-		data := new(types.StaticDNSEntryMongo)
+		data := new(models.StaticDNSEntryMongo)
 		err := res.Decode(data)
 		if err != nil {
 			return nil, err
@@ -466,7 +466,7 @@ func (s *MongoStorage) UpdateStaticDNSEntriesFromBatch(ctx context.Context, entr
 			return nil, err
 		}
 
-		entries[i] = &types.StaticDNSEntry{
+		entries[i] = &models.StaticDNSEntry{
 			ID:       data.ID.Hex(),
 			Name:     data.Name,
 			Regexp:   data.Regexp,
@@ -480,7 +480,7 @@ func (s *MongoStorage) UpdateStaticDNSEntriesFromBatch(ctx context.Context, entr
 	return entries, nil
 }
 
-func (s *MongoStorage) GetStaticDNSEntryByName(ctx context.Context, name string) (*types.StaticDNSEntry, error) {
+func (s *MongoStorage) GetStaticDNSEntryByName(ctx context.Context, name string) (*models.StaticDNSEntry, error) {
 	c, _ := context.WithTimeout(ctx, cfg.Config.Database.Timeout*time.Second)
 	res := s.colls["static-dns"].FindOne(c, bson.M{"name": name})
 
@@ -493,7 +493,7 @@ func (s *MongoStorage) GetStaticDNSEntryByName(ctx context.Context, name string)
 			}
 		}
 
-		data := new(types.StaticDNSEntryMongo)
+		data := new(models.StaticDNSEntryMongo)
 		err := res.Decode(data)
 		if err != nil {
 			return nil, err
@@ -503,7 +503,7 @@ func (s *MongoStorage) GetStaticDNSEntryByName(ctx context.Context, name string)
 			return nil, err
 		}
 
-		return &types.StaticDNSEntry{
+		return &models.StaticDNSEntry{
 			ID:       data.ID.Hex(),
 			Name:     data.Name,
 			Regexp:   data.Regexp,
@@ -517,9 +517,9 @@ func (s *MongoStorage) GetStaticDNSEntryByName(ctx context.Context, name string)
 	}
 }
 
-func (s *MongoStorage) CreateStaticDNSEntry(ctx context.Context, entry *types.StaticDNSEntry) (*types.StaticDNSEntry, error) {
+func (s *MongoStorage) CreateStaticDNSEntry(ctx context.Context, entry *models.StaticDNSEntry) (*models.StaticDNSEntry, error) {
 	c, _ := context.WithTimeout(ctx, cfg.Config.Database.Timeout*time.Second)
-	res, err := s.colls["static-dns"].InsertOne(c, &types.StaticDNSEntryMongo{
+	res, err := s.colls["static-dns"].InsertOne(c, &models.StaticDNSEntryMongo{
 		Name:     entry.Name,
 		Regexp:   entry.Regexp,
 		Address:  entry.Address,
@@ -535,13 +535,13 @@ func (s *MongoStorage) CreateStaticDNSEntry(ctx context.Context, entry *types.St
 	return entry, nil
 }
 
-func (s *MongoStorage) UpdateStaticDNSEntryById(ctx context.Context, id string, entry *types.StaticDNSEntry) (*types.StaticDNSEntry, error) {
+func (s *MongoStorage) UpdateStaticDNSEntryById(ctx context.Context, id string, entry *models.StaticDNSEntry) (*models.StaticDNSEntry, error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
 	}
 
-	res := s.colls["static-dns"].FindOneAndReplace(ctx, bson.M{"_id": objectID}, &types.StaticDNSEntryMongo{
+	res := s.colls["static-dns"].FindOneAndReplace(ctx, bson.M{"_id": objectID}, &models.StaticDNSEntryMongo{
 		Name:     entry.Name,
 		Regexp:   entry.Regexp,
 		Address:  entry.Address,
@@ -553,7 +553,7 @@ func (s *MongoStorage) UpdateStaticDNSEntryById(ctx context.Context, id string, 
 		return nil, res.Err()
 	}
 
-	data := new(types.StaticDNSEntryMongo)
+	data := new(models.StaticDNSEntryMongo)
 	err = res.Decode(data)
 	if err != nil {
 		return nil, err
@@ -563,7 +563,7 @@ func (s *MongoStorage) UpdateStaticDNSEntryById(ctx context.Context, id string, 
 		return nil, err
 	}
 
-	return &types.StaticDNSEntry{
+	return &models.StaticDNSEntry{
 		ID:       data.ID.Hex(),
 		Name:     data.Name,
 		Regexp:   data.Regexp,
@@ -574,7 +574,7 @@ func (s *MongoStorage) UpdateStaticDNSEntryById(ctx context.Context, id string, 
 	}, nil
 }
 
-func (s *MongoStorage) RemoveStaticDNSEntryById(ctx context.Context, id string) (*types.StaticDNSEntry, error) {
+func (s *MongoStorage) RemoveStaticDNSEntryById(ctx context.Context, id string) (*models.StaticDNSEntry, error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err

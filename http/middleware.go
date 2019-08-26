@@ -10,8 +10,8 @@ import (
 	"github.com/go-chi/render"
 	"io/ioutil"
 	cfg "mikrotik_provisioning/config"
+	"mikrotik_provisioning/models"
 	"mikrotik_provisioning/pkg"
-	"mikrotik_provisioning/types"
 	valid "mikrotik_provisioning/validate"
 	"net/http"
 	"strings"
@@ -20,7 +20,7 @@ import (
 func EnsureAddressListExists(i *pkg.Implementation) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			addressList := new(types.AddressList)
+			addressList := new(models.AddressList)
 			var err error
 
 			ctx := context.Background()
@@ -28,15 +28,15 @@ func EnsureAddressListExists(i *pkg.Implementation) func(next http.Handler) http
 				addressList, err = i.Storage.GetAddressListByName(ctx, addressListName)
 
 				if addressList == nil {
-					render.Render(w, r, types.ErrNotFound)
+					render.Render(w, r, models.ErrNotFound)
 					return
 				}
 			} else {
-				render.Render(w, r, types.ErrNotFound)
+				render.Render(w, r, models.ErrNotFound)
 				return
 			}
 			if err != nil {
-				render.Render(w, r, types.ErrInternalServerError(err))
+				render.Render(w, r, models.ErrInternalServerError(err))
 				return
 			}
 
@@ -50,29 +50,29 @@ func EnsureAddressListExists(i *pkg.Implementation) func(next http.Handler) http
 func EnsureAddressListNotExists(i *pkg.Implementation) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			data := new(types.AddressListRequest)
+			data := new(models.AddressListRequest)
 
 			bodyBytes, _ := ioutil.ReadAll(r.Body)
 			r.Body.Close()
 			r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 
 			if err := json.Unmarshal(bodyBytes, data); err != nil {
-				render.Render(w, r, types.ErrInvalidRequest(err))
+				render.Render(w, r, models.ErrInvalidRequest(err))
 				return
 			}
 			if err := valid.Validate.Struct(data); err != nil {
-				render.Render(w, r, types.ErrInvalidRequest(err))
+				render.Render(w, r, models.ErrInvalidRequest(err))
 				return
 			}
 
 			ctx := context.Background()
 			result, err := i.Storage.GetAddressListByName(ctx, data.Name)
 			if err != nil {
-				render.Render(w, r, types.ErrInternalServerError(err))
+				render.Render(w, r, models.ErrInternalServerError(err))
 				return
 			}
 			if result != nil {
-				render.Render(w, r, types.ErrInvalidRequest(errors.New(fmt.Sprintf("address list already exists: %s", result.Name))))
+				render.Render(w, r, models.ErrInvalidRequest(errors.New(fmt.Sprintf("address list already exists: %s", result.Name))))
 				return
 			}
 
@@ -123,7 +123,7 @@ func CheckAcceptHeader(contentTypes ...string) func(next http.Handler) http.Hand
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			} else if format != "" {
-				render.Render(w, r, types.ErrInvalidRequest(errors.New(fmt.Sprintf("invalid format parameter value: %s", format))))
+				render.Render(w, r, models.ErrInvalidRequest(errors.New(fmt.Sprintf("invalid format parameter value: %s", format))))
 				return
 			}
 			ctx := context.WithValue(r.Context(), "Accept", s)
@@ -143,39 +143,38 @@ func CheckAcceptHeader(contentTypes ...string) func(next http.Handler) http.Hand
 func EnsureStaticDNSEntriesNotExist(i *pkg.Implementation) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			data := new(types.StaticDNSBatchRequest)
+			data := new(models.StaticDNSBatchRequest)
 
 			bodyBytes, _ := ioutil.ReadAll(r.Body)
 			r.Body.Close()
 			r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 
 			if err := json.Unmarshal(bodyBytes, data); err != nil {
-				render.Render(w, r, types.ErrInvalidRequest(err))
+				render.Render(w, r, models.ErrInvalidRequest(err))
 				return
 			}
 			if err := valid.Validate.Struct(data); err != nil {
-				render.Render(w, r, types.ErrInvalidRequest(err))
+				render.Render(w, r, models.ErrInvalidRequest(err))
 				return
 			}
 
-			ctx := context.Background()
-			results, err := i.Storage.GetAllStaticDNS(ctx)
+			results, err := i.Storage.GetAllStaticDNS(r.Context())
 			if err != nil {
-				render.Render(w, r, types.ErrInternalServerError(err))
+				render.Render(w, r, models.ErrInternalServerError(err))
 				return
 			}
 			if results != nil {
 				for _, entry := range data.Entries {
 					for _, v := range results {
 						if v.Name == entry.Name {
-							render.Render(w, r, types.ErrInvalidRequest(errors.New(fmt.Sprintf("statis DNS entry already exists: %s", v.Name))))
+							render.Render(w, r, models.ErrInvalidRequest(errors.New(fmt.Sprintf("statis DNS entry already exists: %s", v.Name))))
 							return
 						}
 					}
 				}
 			}
 
-			next.ServeHTTP(w, r.WithContext(ctx))
+			next.ServeHTTP(w, r.WithContext(r.Context()))
 		}
 		return http.HandlerFunc(fn)
 	}
@@ -184,25 +183,24 @@ func EnsureStaticDNSEntriesNotExist(i *pkg.Implementation) func(next http.Handle
 func EnsureStaticDNSEntriesExist(i *pkg.Implementation) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			data := new(types.StaticDNSBatchRequest)
+			data := new(models.StaticDNSBatchRequest)
 
 			bodyBytes, _ := ioutil.ReadAll(r.Body)
 			r.Body.Close()
 			r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 
 			if err := json.Unmarshal(bodyBytes, data); err != nil {
-				render.Render(w, r, types.ErrInvalidRequest(err))
+				render.Render(w, r, models.ErrInvalidRequest(err))
 				return
 			}
 			if err := valid.Validate.Struct(data); err != nil {
-				render.Render(w, r, types.ErrInvalidRequest(err))
+				render.Render(w, r, models.ErrInvalidRequest(err))
 				return
 			}
 
-			ctx := context.Background()
-			results, err := i.Storage.GetAllStaticDNS(ctx)
+			results, err := i.Storage.GetAllStaticDNS(r.Context())
 			if err != nil {
-				render.Render(w, r, types.ErrInternalServerError(err))
+				render.Render(w, r, models.ErrInternalServerError(err))
 				return
 			}
 			if results != nil {
@@ -214,13 +212,13 @@ func EnsureStaticDNSEntriesExist(i *pkg.Implementation) func(next http.Handler) 
 						}
 					}
 					if !exists {
-						render.Render(w, r, types.ErrInvalidRequest(errors.New(fmt.Sprintf("statis DNS entry not exists: %s", entry.Name))))
+						render.Render(w, r, models.ErrInvalidRequest(errors.New(fmt.Sprintf("statis DNS entry not exists: %s", entry.Name))))
 						return
 					}
 				}
 			}
 
-			next.ServeHTTP(w, r.WithContext(ctx))
+			next.ServeHTTP(w, r.WithContext(r.Context()))
 		}
 		return http.HandlerFunc(fn)
 	}
@@ -229,27 +227,26 @@ func EnsureStaticDNSEntriesExist(i *pkg.Implementation) func(next http.Handler) 
 func EnsureStaticDNSEntryExists(i *pkg.Implementation) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			entry := new(types.StaticDNSEntry)
+			entry := new(models.StaticDNSEntry)
 			var err error
 
-			ctx := context.Background()
 			if staticDNSName := chi.URLParam(r, "staticDNSName"); staticDNSName != "" {
-				entry, err = i.Storage.GetStaticDNSEntryByName(ctx, staticDNSName)
+				entry, err = i.Storage.GetStaticDNSEntryByName(r.Context(), staticDNSName)
 
 				if entry == nil {
-					render.Render(w, r, types.ErrNotFound)
+					render.Render(w, r, models.ErrNotFound)
 					return
 				}
 			} else {
-				render.Render(w, r, types.ErrNotFound)
+				render.Render(w, r, models.ErrNotFound)
 				return
 			}
 			if err != nil {
-				render.Render(w, r, types.ErrInternalServerError(err))
+				render.Render(w, r, models.ErrInternalServerError(err))
 				return
 			}
 
-			c := context.WithValue(ctx, "staticDNSEntry", entry)
+			c := context.WithValue(r.Context(), "staticDNSEntry", entry)
 			next.ServeHTTP(w, r.WithContext(c))
 		}
 		return http.HandlerFunc(fn)
@@ -259,7 +256,7 @@ func EnsureStaticDNSEntryExists(i *pkg.Implementation) func(next http.Handler) h
 func EnsureStaticDNSEntryNotExists(i *pkg.Implementation) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			entry := new(types.StaticDNSEntry)
+			entry := new(models.StaticDNSEntry)
 			var err error
 
 			if staticDNSName := chi.URLParam(r, "staticDNSName"); staticDNSName != "" {
@@ -270,29 +267,29 @@ func EnsureStaticDNSEntryNotExists(i *pkg.Implementation) func(next http.Handler
 				r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 
 				if err := json.Unmarshal(bodyBytes, entry); err != nil {
-					render.Render(w, r, types.ErrInvalidRequest(err))
+					render.Render(w, r, models.ErrInvalidRequest(err))
 					return
 				}
 				if err := valid.Validate.Struct(entry); err != nil {
-					render.Render(w, r, types.ErrInvalidRequest(err))
+					render.Render(w, r, models.ErrInvalidRequest(err))
 					return
 				}
 
 				entries, err := i.Storage.GetAllStaticDNS(r.Context())
 				if err != nil {
-					render.Render(w, r, types.ErrInternalServerError(err))
+					render.Render(w, r, models.ErrInternalServerError(err))
 					return
 				}
 
 				for _, e := range entries {
 					if e.Name == entry.Name {
-						render.Render(w, r, types.ErrInvalidRequest(errors.New(fmt.Sprintf("statis DNS entry already exists: %s", e.Name))))
+						render.Render(w, r, models.ErrInvalidRequest(errors.New(fmt.Sprintf("statis DNS entry already exists: %s", e.Name))))
 						return
 					}
 				}
 			}
 			if err != nil {
-				render.Render(w, r, types.ErrInternalServerError(err))
+				render.Render(w, r, models.ErrInternalServerError(err))
 				return
 			}
 
