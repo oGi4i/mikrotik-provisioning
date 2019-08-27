@@ -21,10 +21,14 @@ func ListAddressLists(w http.ResponseWriter, r *http.Request) {
 			render.Render(w, r, models.ErrRender(err))
 		}
 	case "rsc":
-		if out, err := core.ListAddressListsTextResponse(results); err != nil {
-			render.Render(w, r, models.ErrRender(err))
+		if len(results) != 0 {
+			if out, err := core.ListAddressListsTextResponse(results); err != nil {
+				render.Render(w, r, models.ErrRender(err))
+			} else {
+				w.Write(out)
+			}
 		} else {
-			w.Write(out)
+			render.Status(r, http.StatusOK)
 		}
 	}
 }
@@ -91,7 +95,7 @@ func DeleteAddressList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	render.Status(r, http.StatusNoContent)
 }
 
 func PatchAddressList(w http.ResponseWriter, r *http.Request) {
