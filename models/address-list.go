@@ -1,7 +1,6 @@
 package models
 
 import (
-	"github.com/go-chi/render"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	valid "mikrotik_provisioning/validate"
 	"net/http"
@@ -54,19 +53,6 @@ func (a *AddressListPatchRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-func NewAddressListResponse(addressList *AddressList) *AddressListResponse {
-	return &AddressListResponse{AddressList: addressList}
-}
-
 func (rd *AddressListResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
-}
-
-func ListAddressListJSONResponse(addressLists []*AddressList) []render.Renderer {
-	list := make([]render.Renderer, len(addressLists))
-
-	for i, addressList := range addressLists {
-		list[i] = NewAddressListResponse(addressList)
-	}
-	return list
 }

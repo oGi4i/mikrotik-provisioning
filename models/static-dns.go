@@ -1,7 +1,6 @@
 package models
 
 import (
-	"github.com/go-chi/render"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	valid "mikrotik_provisioning/validate"
 	"net/http"
@@ -55,19 +54,6 @@ func (a *StaticDNSRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-func NewStaticDNSResponse(staticDNS *StaticDNSEntry) *StatisDNSResponse {
-	return &StatisDNSResponse{StaticDNSEntry: staticDNS}
-}
-
 func (rd *StatisDNSResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
-}
-
-func ListStaticDNSJSONResponse(staticDNSList []*StaticDNSEntry) []render.Renderer {
-	list := make([]render.Renderer, len(staticDNSList))
-
-	for i, staticDNS := range staticDNSList {
-		list[i] = NewStaticDNSResponse(staticDNS)
-	}
-	return list
 }
