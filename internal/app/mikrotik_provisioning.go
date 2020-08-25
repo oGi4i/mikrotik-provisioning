@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"text/template"
 
 	"mikrotik_provisioning/internal/pkg/address_list"
 )
@@ -21,12 +20,11 @@ type Storage interface {
 }
 
 type Service struct {
-	storage   Storage
-	templates *template.Template
+	storage Storage
 }
 
-func NewMikrotikProvisioningService(storage Storage, templates *template.Template) *Service {
-	return &Service{storage: storage, templates: templates}
+func NewMikrotikProvisioningService(storage Storage) *Service {
+	return &Service{storage: storage}
 }
 
 func (s *Service) GetAddressLists(ctx context.Context) ([]*address_list.AddressList, error) {

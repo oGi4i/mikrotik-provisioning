@@ -138,8 +138,8 @@ func (m *Middleware) CheckAcceptHeader(contentTypes ...string) func(next http.Ha
 				s = s[0:i]
 			}
 
-			if format := r.URL.Query().Get(string(mux.FormatKey)); mux.Format(format) == mux.RSCFormat {
-				ctx := context.WithValue(r.Context(), mux.FormatKey, format)
+			if format := r.URL.Query().Get(string(mux.FormatKey)); format == string(mux.RSCFormat) {
+				ctx := context.WithValue(r.Context(), mux.FormatKey, mux.RSCFormat)
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			} else if format != "" {

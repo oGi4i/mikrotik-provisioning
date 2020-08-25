@@ -41,7 +41,7 @@ func main() {
 		log.Fatalf("failed to initialize MongoStore with error: %q\n", err)
 	}
 
-	service := app.NewMikrotikProvisioningService(mongoStore, templates)
+	service := app.NewMikrotikProvisioningService(mongoStore)
 	mw := mw.NewMiddleware(service, config.Access)
 	handler := mux.NewAddressListHandler(service, templates)
 
