@@ -1,7 +1,7 @@
 ###############################################################################
 # BUILD STAGE
 
-FROM golang:alpine as builder
+FROM golang:1.15-alpine as builder
 RUN mkdir /build
 ADD .. /build/
 WORKDIR /build
