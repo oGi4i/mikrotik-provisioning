@@ -1,0 +1,102 @@
+# More info on config here: https://github.com/golangci/golangci-lint#config-file
+run:
+  deadline: 5m
+  issues-exit-code: 1
+  tests: true
+  skip-dirs:
+    - bin
+    - vendor
+    - var
+    - tmp
+  skip-files:
+    - \.pb\.go$
+    - \.pb\.goclay\.go$
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+linters-settings:
+  govet:
+    check-shadowing: true
+  golint:
+    min-confidence: 0
+  goconst:
+    min-len:         2
+    min-occurrences: 2
+  goimports:
+    local-prefixes: mikrotik_provisioning
+  errchek:
+    check-type-assertions: false
+  nakedret:
+    max-func-lines: 30
+  gocritic:
+    enabled-checks:
+      - appendAssign
+      - caseOrder
+      - dupArg
+      - dupBranchBody
+      - dupCase
+      - dupSubExpr
+      - flagDeref
+      - assignOp
+      - captLocal
+      - defaultCaseOrder
+      - elseif
+      - ifElseChain
+      - regexpMust
+      - singleCaseSwitch
+      - sloppyLen
+      - switchTrue
+      - typeSwitchVar
+      - underef
+      - unslice
+      - commentedOutCode
+      - commentedOutImport
+
+linters:
+  disable-all: true
+  enable:
+    - gocritic
+    - golint
+    - govet
+    - errcheck
+    - deadcode
+    - dupl
+    - structcheck
+    - varcheck
+    - ineffassign
+    - typecheck
+    - goconst
+    - goimports
+    - megacheck # (staticcheck + gosimple + unused in one linter)
+    - gosec
+    - unparam
+    - bodyclose
+    - unconvert
+
+issues:
+  exclude-use-default: false
+  exclude:
+    # _ instead of err checks
+    - G104
+    - G101
+    # for "public interface + private struct implementation" cases only!
+    - exported func * returns unexported type *, which can be annoying to use
+    # can be removed in the development phase
+    # - (comment on exported (method|function|type|const)|should have( a package)? comment|comment should be of the form)
+    # not for the active development - can be removed in the stable phase
+    - should have a package comment, unless it's in another file for this package
+    - don't use an underscore in package name
+    # errcheck: Almost all programs ignore errors on these functions and in most cases it's ok
+    - Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*printf?|os\.(Un)?Setenv|.*Rollback). is not checked
+    - should check returned error before deferring
+    # golint: Allow "userId", and not "userID"
+    # - (var|const|struct|method|func) (.+) should be (.+)
+    - should have comment
+    - is a pure function but its return value is ignored
+    # golint: allow any comments
+    - comment on exported type (.+) should be of the form (.+)
+    # golint: allow capitalized errors
+    # - error strings should not be capitalized or end with punctuation or a newline

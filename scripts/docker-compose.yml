@@ -1,0 +1,22 @@
+version: '3.7'
+services:
+  mikrotik_provisioning:
+    image: ogi4i/mikrotik-provisioning:latest
+    container_name: mikrotik_provisioning
+    hostname: mikrotik_provisioning
+    network_mode: bridge
+    depends_on:
+      - mongo_provisioning
+    ports:
+      - 3333:3333
+    volumes:
+      - ./config.yml:/app/config.yml
+  mongo_provisioning:
+    image: mongo:4.2
+    container_name: mongo_provisioning
+    hostname: mongo_provisioning
+    network_mode: bridge
+    volumes:
+      - ../.mongo:/data/db
+    ports:
+      - 27018:27017
