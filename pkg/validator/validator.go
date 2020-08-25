@@ -1,14 +1,12 @@
-package validate
+package validator
 
 import (
-	"gopkg.in/go-playground/validator.v9"
 	"regexp"
+
+	"gopkg.in/go-playground/validator.v9"
 )
 
-var Validate = validator.New()
-
 func addressListNameValidator(fl validator.FieldLevel) bool {
-
 	if ok, _ := regexp.MatchString(`^[A-Za-z0-9-]+$`, fl.Field().String()); !ok {
 		return false
 	}
@@ -17,7 +15,6 @@ func addressListNameValidator(fl validator.FieldLevel) bool {
 }
 
 func commentValidator(fl validator.FieldLevel) bool {
-
 	if ok, _ := regexp.MatchString(`^[A-Za-zА-Яа-я0-9\s,.:-]+$`, fl.Field().String()); !ok {
 		return false
 	}
@@ -26,7 +23,6 @@ func commentValidator(fl validator.FieldLevel) bool {
 }
 
 func accessKeyValidator(fl validator.FieldLevel) bool {
-
 	if ok, _ := regexp.MatchString(`^[A-Z0-9]{24}$`, fl.Field().String()); !ok {
 		return false
 	}
@@ -35,7 +31,6 @@ func accessKeyValidator(fl validator.FieldLevel) bool {
 }
 
 func secretKeyValidator(fl validator.FieldLevel) bool {
-
 	if ok, _ := regexp.MatchString(`^[a-f0-9]{64}$`, fl.Field().String()); !ok {
 		return false
 	}
@@ -44,7 +39,6 @@ func secretKeyValidator(fl validator.FieldLevel) bool {
 }
 
 func mongoDSNValidator(fl validator.FieldLevel) bool {
-
 	if ok, _ := regexp.MatchString(`^mongodb://([a-zA-Z0-9][a-zA-Z0-9.-]+[a-zA-Z0-9]|(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])):([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$`, fl.Field().String()); !ok {
 		return false
 	}
@@ -53,7 +47,7 @@ func mongoDSNValidator(fl validator.FieldLevel) bool {
 }
 
 func RegisterValidators(v *validator.Validate) error {
-	if err := v.RegisterValidation("addresslistname", addressListNameValidator); err != nil {
+	if err := v.RegisterValidation("address_list_name", addressListNameValidator); err != nil {
 		return err
 	}
 
@@ -61,15 +55,15 @@ func RegisterValidators(v *validator.Validate) error {
 		return err
 	}
 
-	if err := v.RegisterValidation("accesskey", accessKeyValidator); err != nil {
+	if err := v.RegisterValidation("access_key", accessKeyValidator); err != nil {
 		return err
 	}
 
-	if err := v.RegisterValidation("secretkey", secretKeyValidator); err != nil {
+	if err := v.RegisterValidation("secret_key", secretKeyValidator); err != nil {
 		return err
 	}
 
-	if err := v.RegisterValidation("mongodsn", mongoDSNValidator); err != nil {
+	if err := v.RegisterValidation("mongo_dsn", mongoDSNValidator); err != nil {
 		return err
 	}
 

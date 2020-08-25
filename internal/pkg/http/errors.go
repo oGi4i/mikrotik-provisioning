@@ -1,8 +1,9 @@
-package models
+package http
 
 import (
-	"github.com/go-chi/render"
 	"net/http"
+
+	"github.com/go-chi/render"
 )
 
 type ErrResponse struct {
@@ -22,7 +23,7 @@ func (e *ErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
 func ErrInvalidRequest(err error) render.Renderer {
 	return &ErrResponse{
 		Err:            err,
-		HTTPStatusCode: 400,
+		HTTPStatusCode: http.StatusBadRequest,
 		StatusText:     "invalid request",
 		ErrorText:      err.Error(),
 	}
@@ -31,7 +32,7 @@ func ErrInvalidRequest(err error) render.Renderer {
 func ErrInternalServerError(err error) render.Renderer {
 	return &ErrResponse{
 		Err:            err,
-		HTTPStatusCode: 500,
+		HTTPStatusCode: http.StatusInternalServerError,
 		StatusText:     "internal server error",
 		ErrorText:      err.Error(),
 	}
@@ -40,7 +41,7 @@ func ErrInternalServerError(err error) render.Renderer {
 func ErrRender(err error) render.Renderer {
 	return &ErrResponse{
 		Err:            err,
-		HTTPStatusCode: 422,
+		HTTPStatusCode: http.StatusUnprocessableEntity,
 		StatusText:     "error rendering response",
 		ErrorText:      err.Error(),
 	}
